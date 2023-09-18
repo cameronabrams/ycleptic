@@ -10,4 +10,3 @@ To use Ycleptic, install it from PyPI:
 
    $ pip install ycleptic
 
-Ycleptic is under very active development.

@@ -26,7 +26,6 @@ directives:
       - name: directive_1_2
         type: str
         text: This is a description of Directive 1.2
-        required: True
         options: [ValA, ValB]
   - name: directive_2
     type: list

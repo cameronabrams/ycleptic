@@ -12,134 +12,135 @@ To use ``ycleptic`` in your package, you should create a "base" configuration fi
 You then might like to create a "config" class for your package that is a descendant
 of ``Yclept``, and initialize it with your base config and a user config:
 
-```Python
+.. code-block::python
 
-from ycleptic.yclept import Yclept
-from mypackage import data
+  from ycleptic.yclept import Yclept
+  from mypackage import data
 
-class MyConfig(Yclept):
-   def __init__(self, userconfigfile=''):
-      basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")
-      super().__init__(data.basefile,userconfigfile=userconfigfile)
-```
+  class MyConfig(Yclept):
+    def __init__(self, userconfigfile=''):
+        basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")
+        super().__init__(data.basefile,userconfigfile=userconfigfile)
+
 
 Wherever you want to generate the configuration:
 
-```Python
+.. code-block::python
+
    c = MyConfig("my_config.yaml")
-```
+
 
 Here, I've assumed you've got a module-data directory ``data/`` that has 
 a file "base.yaml".  The file `my_config.yaml` is the user's config file.  The "base" config defines the directives that the user is allowed to "declare" or "specify" in their own config file.
 
 The heart of ``ycleptic`` is the base configuration file, which the developer must write. Below is an example:
 
-```
-directives:
-  - name: directive_1
-    type: dict
-    text: This is a description of Directive 1
-    directives:
-      - name: directive_1_1
-        type: list
-        text: This is a description of Directive 1.1
-        default:
-          - 1
-          - 2
-          - 3
-      - name: directive_1_2
-        type: str
-        text: This is a description of Directive 1.2
-        options: [ValA, ValB]
-  - name: directive_2
-    type: list
-    text: Directive 2 is interpretable as an ordered list of directives
-    directives:
-      - name: directive_2a
-        type: dict
-        text: Directive 2a is one possible directive in a user's list
-        directives:
-          - name: d2a_val1
-            type: float
-            text: A floating point value for Value 1 of Directive 2a
-            default: 1.0
-          - name: d2a_val2
-            type: int
-            text: An int for Value 2 of Directive 2a
-            default: 6
-          - name: d2_a_dict
-            type: dict
-            text: this is a dict
-            default:
-              a: 123
-              b: 567
-              c: 987
-      - name: directive_2b
-        type: dict
-        text: Directive 2b is another possible directive
-        directives:
-          - name: val1
-            type: str
-            text: Val 1 of D2b
-            default: a_nice_value
-          - name: val2
-            type: str
-            text: Val 2 of D2b
-            default: a_not_so_nice_value
-  - name: directive_3
-    type: dict
-    text: Directive 3 has a lot of nesting
-    directives:
-      - name: directive_3_1
-        type: dict
-        text: This is a description of Directive 3.1
-        directives:
-          - name: directive_3_1_1
-            type: dict
-            text: This is a description of Directive 3.1.1
-            directives:
-              - name: directive_3_1_1_1
-                type: dict
-                text: This is a description of Directive 3.1.1.1
-                directives:
-                  - name: d3111v1
-                    type: str
-                    text: Value 1 of D 3.1.1.1
-                    default: ABC
-                  - name: d3111v2
-                    type: float
-                    text: Value 2 of D 3.1.1.1
-                    required: False
-      - name: directive_3_2
-        type: dict
-        text: This is a description of Directive 3.2
-        directives:
-          - name: d322
-            type: list
-            text: Directive 3.2.2 has a list of possible subdirectives
-            directives:
-              - name: d322a
-                type: dict
-                text: D 3.2.2a executes a series of flips
-                directives:
-                  - name: nflips
-                    type: int
-                    text: Number of flips
-                    default: 0
-                  - name: flipaxis
-                    type: str
-                    text: Axis around which flip is performed
-                    options: ['x','y','z']
-              - name: d322b
-                type: dict
-                text: Subdirective D 3.2.2b saves the result
-                directives:
-                  - name: filename
-                    type: str
-                    text: name of file to save
-                    default: flipfile.dat
+.. code-block::yaml
 
-```
+  directives:
+    - name: directive_1
+      type: dict
+      text: This is a description of Directive 1
+      directives:
+        - name: directive_1_1
+          type: list
+          text: This is a description of Directive 1.1
+          default:
+            - 1
+            - 2
+            - 3
+        - name: directive_1_2
+          type: str
+          text: This is a description of Directive 1.2
+          options: [ValA, ValB]
+    - name: directive_2
+      type: list
+      text: Directive 2 is interpretable as an ordered list of directives
+      directives:
+        - name: directive_2a
+          type: dict
+          text: Directive 2a is one possible directive in a user's list
+          directives:
+            - name: d2a_val1
+              type: float
+              text: A floating point value for Value 1 of Directive 2a
+              default: 1.0
+            - name: d2a_val2
+              type: int
+              text: An int for Value 2 of Directive 2a
+              default: 6
+            - name: d2_a_dict
+              type: dict
+              text: this is a dict
+              default:
+                a: 123
+                b: 567
+                c: 987
+        - name: directive_2b
+          type: dict
+          text: Directive 2b is another possible directive
+          directives:
+            - name: val1
+              type: str
+              text: Val 1 of D2b
+              default: a_nice_value
+            - name: val2
+              type: str
+              text: Val 2 of D2b
+              default: a_not_so_nice_value
+    - name: directive_3
+      type: dict
+      text: Directive 3 has a lot of nesting
+      directives:
+        - name: directive_3_1
+          type: dict
+          text: This is a description of Directive 3.1
+          directives:
+            - name: directive_3_1_1
+              type: dict
+              text: This is a description of Directive 3.1.1
+              directives:
+                - name: directive_3_1_1_1
+                  type: dict
+                  text: This is a description of Directive 3.1.1.1
+                  directives:
+                    - name: d3111v1
+                      type: str
+                      text: Value 1 of D 3.1.1.1
+                      default: ABC
+                    - name: d3111v2
+                      type: float
+                      text: Value 2 of D 3.1.1.1
+                      required: False
+        - name: directive_3_2
+          type: dict
+          text: This is a description of Directive 3.2
+          directives:
+            - name: d322
+              type: list
+              text: Directive 3.2.2 has a list of possible subdirectives
+              directives:
+                - name: d322a
+                  type: dict
+                  text: D 3.2.2a executes a series of flips
+                  directives:
+                    - name: nflips
+                      type: int
+                      text: Number of flips
+                      default: 0
+                    - name: flipaxis
+                      type: str
+                      text: Axis around which flip is performed
+                      options: ['x','y','z']
+                - name: d322b
+                  type: dict
+                  text: Subdirective D 3.2.2b saves the result
+                  directives:
+                    - name: filename
+                      type: str
+                      text: name of file to save
+                      default: flipfile.dat
+
 
 The base config opens with the single identifier ``directives``, under which is a list of one or more top-level directives.  A directive is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
 
@@ -162,40 +163,41 @@ The ``Yclept`` class has a method called ``console_help`` that is meant to provi
 to your package's base config.  
 
 Suppose this is the content of ``config.py``:
-```Python
 
-from ycleptic.yclept import Yclept
-from mypackage import data
+.. code-block::python
 
-class MyConfig(Yclept):
-   def __init__(self, userconfigfile=''):
-      basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")
-      super().__init__(data.basefile,userconfigfile=userconfigfile)
+  from ycleptic.yclept import Yclept
+  from mypackage import data
+
+  class MyConfig(Yclept):
+    def __init__(self, userconfigfile=''):
+        basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")
+        super().__init__(data.basefile,userconfigfile=userconfigfile)
    
-```
 
 Here is an example of how the interactive help works:
 
-```
->>> from mypackage import MyConfig
->>> c=MyConfig()
->>> c.console_help()
-    Help available for directive_1, directive_2, directive_3
-```
+.. code-block::python
+
+  >>> from mypackage import MyConfig
+  >>> c=MyConfig()
+  >>> c.console_help()
+      Help available for directive_1, directive_2, directive_3
 
 This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just add the directive names:
 
-```
->>> c.console_help('directive_1')
-directive_1:
+
+.. code-block::python
+
+  >>> c.console_help('directive_1')
+  directive_1:
     This is a description of Directive 1
     type: dict
     Help available for directive_1_1, directive_1_2
->>> c.console_help('directive_1','directive_1_2')
-directive_1->
-directive_1_2:
+  >>> c.console_help('directive_1','directive_1_2')
+  directive_1->
+  directive_1_2:
     This is a description of Directive 1.2
     type: str
-```
 
 In this way, you can interactively explore the whole structure of the base config, and learn how to write a user config.

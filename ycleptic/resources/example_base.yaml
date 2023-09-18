@@ -1,0 +1,117 @@
+# Ycleptic
+# (c) 2023 Cameron F. Abrams, 2023
+#
+# Format specification for a configuration file
+#
+# The "name" of any directive may appear as a key whose value is specified by "type"
+# and any dependent "directives".  Values with scalar types should only appear
+# once in any directive set.  Values with list types may have multiple instances
+# of each dependent directive.
+#
+# use "required: True" for scalar values that have no defaults but must be specified
+# use "required: False" for any values that should not be assigned defaults
+#
+directives:
+  - name: directive_1
+    type: dict
+    text: This is a description of Directive 1
+    directives:
+      - name: directive_1_1
+        type: list
+        text: This is a description of Directive 1.1
+        default:
+          - 1
+          - 2
+          - 3
+      - name: directive_1_2
+        type: str
+        text: This is a description of Directive 1.2
+        required: True
+        options: [ValA, ValB]
+  - name: directive_2
+    type: list
+    text: Directive 2 is interpretable as an ordered list of directives
+    directives:
+      - name: directive_2a
+        type: dict
+        text: Directive 2a is one possible directive in a user's list
+        directives:
+          - name: d2a_val1
+            type: float
+            text: A floating point value for Value 1 of Directive 2a
+            default: 1.0
+          - name: d2a_val2
+            type: int
+            text: An int for Value 2 of Directive 2a
+            default: 6
+          - name: d2_a_dict
+            type: dict
+            text: this is a dict
+            default:
+              a: 123
+              b: 567
+              c: 987
+      - name: directive_2b
+        type: dict
+        text: Directive 2b is another possible directive
+        directives:
+          - name: val1
+            type: str
+            text: Val 1 of D2b
+            default: a_nice_value
+          - name: val2
+            type: str
+            text: Val 2 of D2b
+            default: a_not_so_nice_value
+  - name: directive_3
+    type: dict
+    text: Directive 3 has a lot of nesting
+    directives:
+      - name: directive_3_1
+        type: dict
+        text: This is a description of Directive 3.1
+        directives:
+          - name: directive_3_1_1
+            type: dict
+            text: This is a description of Directive 3.1.1
+            directives:
+              - name: directive_3_1_1_1
+                type: dict
+                text: This is a description of Directive 3.1.1.1
+                directives:
+                  - name: d3111v1
+                    type: str
+                    text: Value 1 of D 3.1.1.1
+                    default: ABC
+                  - name: d3111v2
+                    type: float
+                    text: Value 2 of D 3.1.1.1
+                    required: False
+      - name: directive_3_2
+        type: dict
+        text: This is a description of Directive 3.2
+        directives:
+          - name: d322
+            type: list
+            text: Directive 3.2.2 has a list of possible subdirectives
+            directives:
+              - name: d322a
+                type: dict
+                text: D 3.2.2a executes a series of flips
+                directives:
+                  - name: nflips
+                    type: int
+                    text: Number of flips
+                    default: 0
+                  - name: flipaxis
+                    type: str
+                    text: Axis around which flip is performed
+                    options: ['x','y','z']
+              - name: d322b
+                type: dict
+                text: Subdirective D 3.2.2b saves the result
+                directives:
+                  - name: filename
+                    type: str
+                    text: name of file to save
+                    default: flipfile.dat

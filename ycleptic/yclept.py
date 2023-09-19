@@ -2,11 +2,46 @@
 """A class for handling specialized YAML-format input files"""
 import yaml
 from collections import UserDict
-import logging
+from . import resources
 import textwrap
+from pathlib import Path
+import os
+import logging
 logger=logging.getLogger(__name__)
 
+def get_version():
+    """Queries the package's pyproject.toml to get the package version"""
+    res_path=Path(resources.__file__).parent
+    logger.debug(f'res_path {res_path}')
+    res_parent=Path(res_path).parent
+    logger.debug(f'res_parent {res_parent}')
+    package_dir=Path(res_parent).parent
+    pyproject_toml=os.path.join(package_dir,'pyproject.toml')
+    logger.debug(f'pyproject_toml {pyproject_toml}')
+    version='UNKNOWN'
+    if os.path.exists(pyproject_toml):
+        with open(pyproject_toml,'r') as f:
+            data=f.read().split('\n')
+        for line in data:
+            tokens=line.split()
+            if tokens[0]=='version':
+                version=tokens[2].strip('"')
+    return version
+
 class Yclept(UserDict):
+    """A inherited UserDict class for handling controlled YAML input
+    
+    Keys
+    ----
+    basefile: str
+        name of base config file
+    userfile: str, optional
+        name of user config file
+    base: dict
+        contents of base config file
+    user: dict
+        contents of user config file processed against the base config
+    """
     def __init__(self,basefile,userfile=''):
         data={}
         with open(basefile,'r') as f:
@@ -16,25 +51,54 @@ class Yclept(UserDict):
         if userfile:
             with open(userfile,'r') as f:
                 self["user"]=yaml.safe_load(f)
-        dwalk(self["base"],self["user"])
+        _dwalk(self["base"],self["user"])
         self["basefile"]=basefile
         self["userfile"]=userfile
 
     def console_help(self,*args,end=''):
-        userhelp(self["base"]["directives"],print,*args,end=end)
+        """Interactive help with base config structure
+        
+        Usage
+        -----
+        If Y is an initialized instance of Yclept, then
+
+        >>> Y.console_help()
+
+        will show the name of the top-level directives and their
+        respective help strings.  Each positional
+        argument will drill down another level in the base-config
+        structure.
+        """
+        _userhelp(self["base"]["directives"],print,*args,end=end)
 
     def dump_user(self,filename='complete-user.yaml'):
+        """generates a full dump of the processed user config, including all implied default values
+        
+        Arguments
+        ---------
+        filename: str, optional
+            name of file to write
+        """
         with open(filename,'w') as f:
-            f.write('# Ycleptic -- Cameron F. Abrams -- cfa22@drexel.edu\n')
+            f.write(f'# Ycleptic v {get_version()} -- Cameron F. Abrams -- cfa22@drexel.edu\n')
             f.write('# Dump of complete user config file\n')
             yaml.dump(self['user'],f)
 
     def make_default_specs(self,*args):
+        """generates a partial config based on NULL user input and specified
+        hierachty
+        
+        Arguments
+        ---------
+        args: tuple
+            directive hierachy to use as the root for the config
+        """
         holder={}
-        make_def(self['base']['directives'],holder,*args)
+        _make_def(self['base']['directives'],holder,*args)
         return holder
 
-def make_def(L,H,*args):
+def _make_def(L,H,*args):
+    """recursive generation of YAML-format default user-config hierarchy"""
     if len(args)==1:
         name=args[0]
         try:
@@ -61,9 +125,10 @@ def make_def(L,H,*args):
         except:
             raise ValueError(f'{nextarg} is not a recognized directive')
         item=L[item_idx]
-        make_def(item["directives"],H,*args)
+        _make_def(item["directives"],H,*args)
 
-def userhelp(L,logf,*args,end=''):
+def _userhelp(L,logf,*args,end=''):
+    """rescursive generation of help messages for directives and subdirectives"""
     if len(args)==0:
         logf(f'    Help available for {", ".join([dspec["name"] for dspec in L])}{end}')
     elif len(args)==1:
@@ -83,7 +148,7 @@ def userhelp(L,logf,*args,end=''):
         if item.get("required",False):
             logf(f'    A value is required.{end}')
         if "directives" in item:
-            userhelp(item["directives"],logf,end=end)
+            _userhelp(item["directives"],logf,end=end)
     else:
         arglist=list(args)
         nextarg=arglist.pop(0)
@@ -94,10 +159,9 @@ def userhelp(L,logf,*args,end=''):
             raise ValueError(f'{nextarg} is not a recognized directive')
         item=L[item_idx]
         logf(f'{nextarg}->{end}')
-        userhelp(item['directives'],logf,*args,end=end)
+        _userhelp(item['directives'],logf,*args,end=end)
 
-
-def dwalk(D,I):
+def _dwalk(D,I):
     """Process the user's config-dict I by walking recursively through it 
        along with the default config-specification dict D
        
@@ -147,7 +211,7 @@ def dwalk(D,I):
                 # which will set defaults for all descendants
                 if 'directives' in dx:
                     I[d]={}
-                    dwalk(dx,I[d])
+                    _dwalk(dx,I[d])
                 else:
                     I[d]=dx.get('default',{})
             elif typ=='list':
@@ -163,18 +227,18 @@ def dwalk(D,I):
             elif typ=='dict':
                 # process descendants
                 if 'directives' in dx:
-                    dwalk(dx,I[d])
+                    _dwalk(dx,I[d])
                 else:
                     special_update(dx.get('default',{}),I[d])
             elif typ=='list':
                 # process list-item children
                 if 'directives' in dx:
-                    lwalk(dx,I[d])
+                    _lwalk(dx,I[d])
                 else:
                     defaults=dx.get('default',[])
                     I[d]=defaults+I[d]
 
-def lwalk(D,L):
+def _lwalk(D,L):
     assert 'directives' in D
     tld=[x['name'] for x in D['directives']]
     # logger.debug(f'lwalk on {tld}')
@@ -195,7 +259,7 @@ def lwalk(D,L):
         elif typ=='dict':
             if not item[itemname]:
                 item[itemname]={}
-            dwalk(dx,item[itemname])
+            _dwalk(dx,item[itemname])
         else:
             logger.debug(f'Warning: List-element-directive \'{itemname}\' in \'{dx["name"]}\' ignored.')
 

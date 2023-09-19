@@ -4,7 +4,8 @@
 YAML is a popular markup language for input files, with its easy syntax and clear
 mapping to lists and dicts.  Ycleptic allows a developer to specify all keys, datatypes,
 default values, choice restrictions, and other features of YAML-format input 
-file.
+files. This makes the specification of input file syntax on top of YAML for any 
+particular application a bit easier than just using pure YAML.
 
 ## Installation
 
@@ -12,10 +13,15 @@ file.
 pip install ycleptic
 ```
 
-Once installed, the developer has access to the Yclept class.
+Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
 
+
+* 1.0.2
+    * Updated documentation; added version detection
+* 1.0.1
+    * Include example base config
 * 1.0.0
     * Initial version
 

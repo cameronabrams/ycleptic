@@ -1,0 +1,28 @@
+# Ycleptic v 1.0.2 -- Cameron F. Abrams -- cfa22@drexel.edu
+# Dump of complete user config file
+directive_1:
+  directive_1_1:
+  - 1
+  - 2
+  - 3
+  directive_1_2: valA
+directive_2:
+- directive_2b:
+    val1: hello
+    val2: let us begin
+- directive_2a:
+    d2_a_dict:
+      b: 765
+      c: 789
+    d2a_val1: 99.999
+    d2a_val2: 6
+- directive_2b:
+    val1: goodbye
+    val2: we are done
+directive_3:
+  directive_3_1:
+    directive_3_1_1:
+      directive_3_1_1_1:
+        d3111v1: ABC
+  directive_3_2:
+    d322: []

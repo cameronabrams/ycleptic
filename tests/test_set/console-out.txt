@@ -1,0 +1,14 @@
+    Help available for directive_1, directive_2, directive_3
+directive_1:
+    This is a description of Directive 1
+    type: dict
+    Help available for directive_1_1, directive_1_2
+directive_2->
+directive_2a:
+    Directive 2a is one possible directive in a user's list
+    type: dict
+    Help available for d2a_val1, d2a_val2, d2_a_dict
+directive_3:
+    Directive 3 has a lot of nesting
+    type: dict
+    Help available for directive_3_1, directive_3_2

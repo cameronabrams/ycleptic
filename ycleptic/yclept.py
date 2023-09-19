@@ -2,31 +2,12 @@
 """A class for handling specialized YAML-format input files"""
 import yaml
 from collections import UserDict
-from . import resources
 import textwrap
-from pathlib import Path
-import os
 import logging
 logger=logging.getLogger(__name__)
+import importlib.metadata
 
-def get_version():
-    """Queries the package's pyproject.toml to get the package version"""
-    res_path=Path(resources.__file__).parent
-    logger.debug(f'res_path {res_path}')
-    res_parent=Path(res_path).parent
-    logger.debug(f'res_parent {res_parent}')
-    package_dir=Path(res_parent).parent
-    pyproject_toml=os.path.join(package_dir,'pyproject.toml')
-    logger.debug(f'pyproject_toml {pyproject_toml}')
-    version='UNKNOWN'
-    if os.path.exists(pyproject_toml):
-        with open(pyproject_toml,'r') as f:
-            data=f.read().split('\n')
-        for line in data:
-            tokens=line.split()
-            if tokens[0]=='version':
-                version=tokens[2].strip('"')
-    return version
+__version__ = importlib.metadata.version("ycleptic")
 
 class Yclept(UserDict):
     """A inherited UserDict class for handling controlled YAML input
@@ -80,7 +61,7 @@ class Yclept(UserDict):
             name of file to write
         """
         with open(filename,'w') as f:
-            f.write(f'# Ycleptic v {get_version()} -- Cameron F. Abrams -- cfa22@drexel.edu\n')
+            f.write(f'# Ycleptic v {__version__} -- Cameron F. Abrams -- cfa22@drexel.edu\n')
             f.write('# Dump of complete user config file\n')
             yaml.dump(self['user'],f)
 

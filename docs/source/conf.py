@@ -2,7 +2,7 @@
 
 # -- Project information
 
-project = 'pestifer'
+project = 'ycleptic'
 copyright = '2023, Cameron F. Abrams'
 author = 'cfa22@drexel.edu'
 

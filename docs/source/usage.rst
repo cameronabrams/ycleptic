@@ -31,7 +31,7 @@ Wherever you want to generate the configuration:
 
 
 Here, I've assumed you've got a module-data directory ``data/`` that has 
-a file "base.yaml".  The file `my_config.yaml` is the user's config file.  The "base" config defines the directives that the user is allowed to "declare" or "specify" in their own config file.
+a file ``base.yaml``.  The file ``my_config.yaml`` is the user's config file.  The "base" config defines the directives that the user is allowed to "declare" or "specify" in their own config file.
 
 The Base Config
 ---------------
@@ -227,4 +227,4 @@ The base config specifies both the allowable syntax of a user config and how the
   directive_1:
     directive_1_2: valA
 
-Here, `directive_2` is a list of "tasks": first, an instance of `directive_2b` with certain values of `val1` and `val2`, then `directive_2a`, and then another different instance of `directive_2b`.  `directive_1` with its one subdirective appears below `directive_2`, but they are not in any kind of sequence as far as the interpreter goes, since they are dictionary keys, not list elements.
+Here, the user has declared an instance of `directive_2` as a list of "tasks": first, an instance of `directive_2b` with certain values of `val1` and `val2`, then `directive_2a`, and then another different instance of `directive_2b`.  The declaration of `directive_1` with its one subdirective appears below `directive_2`, but they are not in any kind of sequence as far as the interpreter goes, since they are dictionary keys, not list elements.

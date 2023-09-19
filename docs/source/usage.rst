@@ -12,7 +12,7 @@ To use ``ycleptic`` in your package, you should create a "base" configuration fi
 You then might like to create a "config" class for your package that is a descendant
 of ``Yclept``, and initialize it with your base config and a user config:
 
-.. code-block::python
+.. code-block:: python
 
   from ycleptic.yclept import Yclept
   from mypackage import data
@@ -25,17 +25,20 @@ of ``Yclept``, and initialize it with your base config and a user config:
 
 Wherever you want to generate the configuration:
 
-.. code-block::python
+.. code-block:: python
 
-   c = MyConfig("my_config.yaml")
+  c = MyConfig("my_config.yaml")
 
 
 Here, I've assumed you've got a module-data directory ``data/`` that has 
 a file "base.yaml".  The file `my_config.yaml` is the user's config file.  The "base" config defines the directives that the user is allowed to "declare" or "specify" in their own config file.
 
+The Base Config
+---------------
+
 The heart of ``ycleptic`` is the base configuration file, which the developer must write. Below is an example:
 
-.. code-block::yaml
+.. code-block:: yaml
 
   directives:
     - name: directive_1
@@ -164,7 +167,7 @@ to your package's base config.
 
 Suppose this is the content of ``config.py``:
 
-.. code-block::python
+.. code-block:: python
 
   from ycleptic.yclept import Yclept
   from mypackage import data
@@ -177,7 +180,7 @@ Suppose this is the content of ``config.py``:
 
 Here is an example of how the interactive help works:
 
-.. code-block::python
+.. code-block:: python
 
   >>> from mypackage import MyConfig
   >>> c=MyConfig()
@@ -187,7 +190,7 @@ Here is an example of how the interactive help works:
 This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just add the directive names:
 
 
-.. code-block::python
+.. code-block:: python
 
   >>> c.console_help('directive_1')
   directive_1:
@@ -201,3 +204,27 @@ This reflects the fact that the three top-level directives available are called 
     type: str
 
 In this way, you can interactively explore the whole structure of the base config, and learn how to write a user config.
+
+The User Config
+---------------
+
+The base config specifies both the allowable syntax of a user config and how the resulting dictionary representation in memory should look.  Every directive name is a key in the user config.  So an example user config that conforms to the base config above might look like
+
+.. code-block:: yaml
+
+  directive_2:
+     - directive_2b:
+         val1: hello
+         val2: let us begin
+     - directive_2a:
+         d2a_val1: 99.999
+         d2_a_dict:
+           b: 765
+           c: 789
+     - directive_2b:
+         val1: goodbye
+         val2: we are done
+  directive_1:
+    directive_1_2: valA
+
+Here, `directive_2` is a list of "tasks": first, an instance of `directive_2b` with certain values of `val1` and `val2`, then `directive_2a`, and then another different instance of `directive_2b`.  `directive_1` with its one subdirective appears below `directive_2`, but they are not in any kind of sequence as far as the interpreter goes, since they are dictionary keys, not list elements.

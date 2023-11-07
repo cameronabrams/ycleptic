@@ -16,7 +16,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
-
+* 1.0.3.3
+    * fixed spurious output
 * 1.0.3.2
     * fixed version detection bug
 * 1.0.2

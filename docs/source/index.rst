@@ -10,6 +10,10 @@ detailed input file organization.
 
    Ycleptic is under active development.
 
+.. note:: 
+
+   Ycleptic is used in the `pestifer <https://pypi.org/project/pestifer/>`_ package.
+
 Contents
 --------
 

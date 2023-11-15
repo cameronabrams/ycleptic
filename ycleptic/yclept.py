@@ -36,7 +36,7 @@ class Yclept(UserDict):
         self["basefile"]=basefile
         self["userfile"]=userfile
 
-    def console_help(self,*args,end=''):
+    def console_help(self,*args,end='',**kwargs):
         """Interactive help with base config structure
         
         Usage
@@ -50,7 +50,8 @@ class Yclept(UserDict):
         argument will drill down another level in the base-config
         structure.
         """
-        _userhelp(self["base"]["directives"],print,*args,end=end)
+        f=kwargs.get('write_func',print)
+        _userhelp(self["base"]["directives"],f,*args,end=end)
 
     def dump_user(self,filename='complete-user.yaml'):
         """generates a full dump of the processed user config, including all implied default values

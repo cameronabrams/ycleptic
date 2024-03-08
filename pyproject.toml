@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "ycleptic"
-version = "1.0.4"
+version = "1.0.5"
 authors = [
   { name="Cameron F Abrams", email="cfa22@drexel.edu" },
 ]

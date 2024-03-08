@@ -23,10 +23,14 @@ class Yclept(UserDict):
     user: dict
         contents of user config file processed against the base config
     """
-    def __init__(self,basefile,userfile=''):
+    def __init__(self,basefile,userfile='',rcfile=''):
         data={}
         with open(basefile,'r') as f:
             data["base"]=yaml.safe_load(f)
+        if rcfile:
+            with open(rcfile,'r') as f:
+                rc=yaml.safe_load(f)
+                _mwalk(data["base"],rc)
         super().__init__(data)
         self["user"]={}
         if userfile:
@@ -35,6 +39,7 @@ class Yclept(UserDict):
         _dwalk(self["base"],self["user"])
         self["basefile"]=basefile
         self["userfile"]=userfile
+        self["rcfile"]=rcfile
 
     def console_help(self,*args,end='',**kwargs):
         """Interactive help with base config structure
@@ -143,6 +148,23 @@ def _userhelp(L,logf,*args,end=''):
         logf(f'{nextarg}->{end}')
         _userhelp(item['directives'],logf,*args,end=end)
 
+def _mwalk(D1,D2):
+    """With custom config from D2, update D1"""
+    assert 'directives' in D1
+    assert 'directives' in D2
+    tld1=[x['name'] for x in D1['directives']]
+    for d2 in D2['directives']:
+        if d2['name'] in tld1:
+            logger.debug(f'Config directive {d2["name"]} is in the dotfile')
+            didx=tld1.index(d2['name'])
+            d1=D1['directives'][didx]
+            if 'directives' in d1 and 'directives' in d2:
+                _mwalk(d1,d2)
+            else:
+                d1.update(d2)
+        else:
+            D1['directives'].append(d2)
+
 def _dwalk(D,I):
     """Process the user's config-dict I by walking recursively through it 
        along with the default config-specification dict D
@@ -150,11 +172,12 @@ def _dwalk(D,I):
        I is the dict yaml-read from the user input
        D is thd config-specification dict yaml-read from the package resources
     """
-    # get the name of each config directive at this level in this block
     assert 'directives' in D # D must contain one or more directives
+    # get the name of each config directive at this level in this block
     tld=[x['name'] for x in D['directives']]
     if I==None:
         raise ValueError(f'Null dictionary found; expected a dict with key(s) {tld} under \'{D["name"]}\'.')
+    # The user's config file is a dictionary whose keys must match directive names in the config
     ud=list(I.keys())
     for u in ud:
         if not u in tld:
@@ -164,7 +187,7 @@ def _dwalk(D,I):
     for d in tld:
         # get its index in the list of directive names
         tidx=tld.index(d)
-        # get its dictionary
+        # get its dictionary; D['directives'] is a list
         dx=D['directives'][tidx]
         # logger.debug(f' d {d}')
         # get its type
@@ -256,8 +279,10 @@ def special_update(dict1,dict2):
             dict1[k]=v
         else:
             if type(v)==list and type(ov)==list:
+                logger.debug(f'merging {v} into {ov}')
                 for nv in v:
                     if not nv in ov:
+                        logger.debug(f'appending {nv}')
                         ov.append(nv)
             elif type(v)==dict and type(ov)==dict:
                 ov.update(v)

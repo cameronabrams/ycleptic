@@ -7,10 +7,10 @@ Installation of Ycleptic gives access to the ``Yclept`` class.
 wants to specify the allowed formats, expected values, default values, required
 values, etc., of a YAML-format user input file (a "configuration").
 
-To use ``ycleptic`` in your package, you should create a "base" configuration file for ``ycleptic`` that lives in your package as a package data.  More about that file in a moment.
+To use ``ycleptic`` in your package, you should create a "base" configuration file for ``ycleptic`` that lives in your package as package data.  More about that file in a moment.
 
 You then might like to create a "config" class for your package that is a descendant
-of ``Yclept``, and initialize it with your base config and a user config:
+of ``Yclept``, and initialize it with your base config and a user config. For example:
 
 .. code-block:: python
 
@@ -23,20 +23,23 @@ of ``Yclept``, and initialize it with your base config and a user config:
         super().__init__(data.basefile,userconfigfile=userconfigfile)
 
 
-Wherever you want to generate the configuration:
+Here, ``data`` is just a directory where you store your package data (``rootdir/mypackage/data``, for example), and you can put ``base.yaml`` in that directory as the "base" configuration description.  Essentially, it is a description of *what* can be configured by a *user's* configuration file when *they* run your package.  Now, inside your package source, if you want to read in the user's configuration file (like if its name was passed in as a command-line argument), you would instantiate a member of the ``MyConfig`` class:
 
 .. code-block:: python
 
-  c = MyConfig("my_config.yaml")
+  c = MyConfig(userconfigfile=args.c)
 
+I imagine this might conform to a command-line invocation like:
 
-Here, I've assumed you've got a module-data directory ``data/`` that has 
-a file ``base.yaml``.  The file ``my_config.yaml`` is the user's config file.  The "base" config defines the directives that the user is allowed to "declare" or "specify" in their own config file.
+.. code-block:: console
+
+  $ mypackagecommand -c myconfig.yaml
+
 
 The Base Config
 ---------------
 
-The heart of ``ycleptic`` is the base configuration file, which the developer must write. Below is an example:
+The heart of ``ycleptic`` is the base configuration file, which the developer must write. The base configuration is the developer's expression of what a *user* can configure when they run the package.  Below is an example:
 
 .. code-block:: yaml
 
@@ -145,7 +148,7 @@ The heart of ``ycleptic`` is the base configuration file, which the developer mu
                       default: flipfile.dat
 
 
-The base config opens with the single identifier ``directives``, under which is a list of one or more top-level directives.  A directive is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
+The base config must open with the single identifier ``directives``, under which is a list of one or more top-level directives.  A directive is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
 
 ``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``list``, or ``dict``.  The data content in a directive is of type ``type`` unless two conditions are met:
 
@@ -162,8 +165,10 @@ There are three other keys that a directive may have:
 2. ``required``:  a boolean.  If False, that means no defaults are assigned; if a user declares this directive without providing values, an error occurs, but a user need not declare this directive at all.  If True, the directive must be declared (and if it is nested, all the antecedant directives must also be declared).
 3. ``options``: a list of allowed values; if the user declares this directive with a value not in this list, an error occurs.
 
-The ``Yclept`` class has a method called ``console_help`` that is meant to provide interactive help to a package user trying to develop their own config file that conform's
-to your package's base config.  
+Console Help
+------------
+
+The ``Yclept`` class has a method called ``console_help`` that is meant to provide interactive help to a package user trying to develop their own config file that conform's to your package's base config.  
 
 Suppose this is the content of ``config.py``:
 
@@ -188,7 +193,6 @@ Here is an example of how the interactive help works:
       Help available for directive_1, directive_2, directive_3
 
 This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just add the directive names:
-
 
 .. code-block:: python
 
@@ -227,6 +231,31 @@ The base config specifies both the allowable syntax of a user config and how the
   directive_1:
     directive_1_2: valA
 
-Here, the user has declared an instance of ``directive_2`` as a list of "tasks": first, an instance of ``directive_2b`` with certain values of ``val1`` and ``val2``, then ``directive_2a``, and then another different instance of ``directive_2b``.  The declaration of ``directive_1`` with its one subdirective appears below `directive_2`, but they are not in any kind of sequence as far as the interpreter goes, since they are dictionary keys, not list elements.
+Here, the user has declared an instance of ``directive_2`` as a list of "tasks": first, an instance of ``directive_2b`` with certain values of ``val1`` and ``val2``, then ``directive_2a``, and then another different instance of ``directive_2b``.  The declaration of ``directive_1`` with its one subdirective appears below ``directive_2``, but they are not in any kind of sequence as far as the interpreter goes, since they are dictionary keys, not list elements.
 
 The subdirective ``d2_a_dict`` of ``directive_2a`` reassigns values for keys ``b`` and ``c``; the default value for key ``a`` claimed in ``base.yaml`` (123) is unchanged.
+
+The Resource File
+-----------------
+
+You may want users of your application to be able to set their own global default values for directives, overwriting defaults you define in your application's base configuration.  ``Yclept`` supports reading a secondary resource file (e.g., ``~/.your_app_name.rc``) in which users can specify directives that replace or add to the list of directives in your application's base configuration.
+
+For example, continuing with the base configuration defined above, suppose a user of your application has the file ``~/.your_app_name.rc`` with these contents:
+
+.. code-block:: yaml
+
+  directives:
+    - name: directive_2
+      type: list
+      text: Directive 2 is interpretable as an ordered list of directives
+      directives:
+        - name: directive_2a
+          type: dict
+          text: Directive 2a is one possible directive in a user's list
+          directives:
+            - name: d2a_val2
+              type: int
+              text: An int for Value 2 of Directive 2a
+              default: 7 # user has changed this in their resource file
+
+The presence of this file indicates the user would like the default value of directive ``d2a_val2`` under directive ``directive_2a`` of base directive ``directive_2`` to be 7 instead of 6.

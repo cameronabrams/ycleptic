@@ -16,6 +16,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.0.5
+    * added support for a user dotfile/rcfile
 * 1.0.4
     * added `**kwargs` to `console_help` to allow override of `print`
 * 1.0.3.3

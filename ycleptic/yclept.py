@@ -272,7 +272,7 @@ def special_update(dict1,dict2):
     """Update dict1 with values from dict2 in a "special" way so that
     any list values are appended rather than overwritten
     """
-    # print(f'special update {dict1} {dict2}')
+    logger.debug(f'special update {dict1} {dict2}')
     for k,v in dict2.items():
         ov=dict1.get(k,None)
         if not ov:

@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.0.7
+    * bugfix: bad string in doc builder
 * 1.0.6
     * interactive mode implemented
     * `config-help` subcommand added

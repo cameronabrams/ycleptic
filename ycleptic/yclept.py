@@ -261,7 +261,7 @@ def _make_doc(L,topname,toptext,fp,docname='',doctext=''):
             name=s["name"]
             default=s["default"] #must have
             with open(f'{name}.rst','w') as f:
-                f.write(f'``{name}``\n{'-'*(4+len(name))}\n\n')
+                f.write(f'``{name}``\n{"-"*(4+len(name))}\n\n')
                 if type(default)==list:
                     for d in default:
                         f.write(f'  * {d}\n')

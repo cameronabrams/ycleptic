@@ -1,0 +1,21 @@
+``directive_2a``
+================
+
+Directive 2a is one possible directive in a user's list
+
+Single-valued parameters:
+
+  * ``d2a_val1``: A floating point value for Value 1 of Directive 2a (default: 1.0)
+
+  * ``d2a_val2``: An int for Value 2 of Directive 2a (default: 6)
+
+
+
+Container-like parameter:
+
+.. toctree::
+   :maxdepth: 1
+
+   directive_2a/d2_a_dict
+
+

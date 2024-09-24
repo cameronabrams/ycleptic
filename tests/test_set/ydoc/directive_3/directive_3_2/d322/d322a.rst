@@ -1,0 +1,13 @@
+``d322a``
+=========
+
+D 3.2.2a executes a series of flips
+
+Single-valued parameters:
+
+  * ``nflips``: Number of flips (default: 0)
+
+  * ``flipaxis``: Axis around which flip is performed
+
+
+

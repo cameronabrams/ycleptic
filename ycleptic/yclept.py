@@ -1,13 +1,26 @@
 # Author: Cameron F. Abrams, <cfa22@drexel.edu>
 """A class for handling specialized YAML-format input files"""
+import argparse as ap
+import importlib.metadata
+import logging
+import os
+import shutil
+import textwrap
 import yaml
 from collections import UserDict
-import textwrap
-import logging
-logger=logging.getLogger(__name__)
-import importlib.metadata
+from argparse import Namespace
 
-__version__ = importlib.metadata.version("ycleptic")
+logger=logging.getLogger(__name__)
+
+__version__=importlib.metadata.version("ycleptic")
+
+banner_message="""
+    {} v. {}
+    https://ycleptic.readthedocs.io/en/latest/
+
+    Cameron F. Abrams <cfa22@drexel.edu>
+
+    """.format(__package__.title(),__version__)
 
 class Yclept(UserDict):
     """A inherited UserDict class for handling controlled YAML input
@@ -41,7 +54,7 @@ class Yclept(UserDict):
         self["userfile"]=userfile
         self["rcfile"]=rcfile
 
-    def console_help(self,*args,end='',**kwargs):
+    def console_help(self,arglist,end='',**kwargs):
         """Interactive help with base config structure
         
         Usage
@@ -56,7 +69,15 @@ class Yclept(UserDict):
         structure.
         """
         f=kwargs.get('write_func',print)
-        _userhelp(self["base"]["directives"],f,*args,end=end)
+        interactive_prompt=kwargs.get('interactive_prompt','')
+        exit_at_end=kwargs.get('exit_at_end',False)
+        self.H=Namespace(base=self['base']['directives'],write_func=f,arglist=arglist,end=end,interactive_prompt=interactive_prompt,exit=exit_at_end)
+        self._help()
+
+    def make_doctree(self,topname='config_ref'):
+        with open(f'{topname}.rst','w') as f:
+            doc=self['base'].get('docs',{})
+            _make_doc(self['base']['directives'],topname,'Top-level directives',f,docname=doc.get('title',''),doctext=doc.get('text',''))
 
     def dump_user(self,filename='complete-user.yaml'):
         """generates a full dump of the processed user config, including all implied default values
@@ -83,6 +104,181 @@ class Yclept(UserDict):
         holder={}
         _make_def(self['base']['directives'],holder,*args)
         return holder
+
+    def _show_item(self,idx):
+        H=self.H
+        item=H.base[idx]
+        end=H.end
+        H.write_func(f'\n{item["name"]}:{end}')
+        H.write_func(f'    {textwrap.fill(item["text"],subsequent_indent="      ")}{end}')
+        if item["type"]!="dict":
+            if "default" in item:
+                H.write_func(f'    default: {item["default"]}{end}')
+            if "choices" in item:
+                H.write_func(f'    allowed values: {", ".join(item["choices"])}{end}')
+            if item.get("required",False):
+                H.write_func(f'    A value is required.{end}')
+
+    def _endhelp(self):
+        self.H.write_func('Thank you for using ycleptic\'s interactive help!')
+        exit(0)
+
+    def _show_path(self):
+        self.H.write_func('\nbase|'+'->'.join(self.path))
+
+    def _show_branch(self,idx,interactive=False):
+        self._show_path()
+        self._show_item(idx)
+        self._show_subdirectives(interactive=interactive)
+
+    def _show_leaf(self,idx):
+        self._show_path()
+        self._show_item(idx)
+
+    def _show_subdirectives(self,interactive=False):
+        H=self.H
+        subds=[x["name"] for x in H.base]
+        hassubs=['directives' in x for x in H.base]
+        att=['']*len(subds)
+        if interactive:
+            subds+=['..','!']
+            att+=[' up',' quit']
+            hassubs+=[False,False]
+        for m,h,a in zip(subds,hassubs,att):
+            if h:
+                c=' ->'
+            else:
+                c=''
+            H.write_func(f'    {m}{c}{a}')
+
+    def _get_help_choice(self,init_list):
+        H=self.H
+        if len(init_list)>0:
+            choice=init_list.pop()
+        else:
+            choice='!'
+            if H.interactive_prompt!='':
+                choice=input(H.interactive_prompt)
+        while choice=='' or not choice in [x["name"] for x in H.base]+['..','!']:
+            if choice!='':
+                H.write_func(f'{choice} not recognized.')
+            if len(init_list)>0:
+                choice=init_list.pop()
+            else:
+                choice='!'
+                if H.interactive_prompt!='':
+                    choice=input(H.interactive_prompt)
+        return choice
+
+    def _help(self):
+        H=self.H
+        self.basestack=[]
+        self.path=[]
+        init_keylist=H.arglist[::-1]
+        if len(init_keylist)==0:
+            self._show_subdirectives(H.interactive_prompt!='')
+        choice=self._get_help_choice(init_keylist)
+        while choice!='!':
+            if choice=='..':
+                if len(self.basestack)==0:
+                    if H.exit:
+                        self._endhelp()
+                    return
+                H.base=self.basestack.pop()
+                if len(self.path)>0:
+                    self.path.pop()
+            else:
+                downs=[x["name"] for x in H.base]
+                idx=downs.index(choice)
+                if len(init_keylist)==0:
+                    self._show_item(idx)
+                if 'directives' in H.base[idx]:
+                    # this is not a leaf, but we just showed it
+                    # so we history the base and reassign it
+                    self.basestack.append(H.base)
+                    self.path.append(choice)
+                    H.base=H.base[idx]['directives']
+                else:
+                    # this is a leaf, and we just showed it,
+                    # so we can dehistory it but keep the base
+                    # since it might have more leaves to select
+                    H.write_func(f'\nAll subdirectives at the same level as \'{choice}\':')
+            if len(init_keylist)==0:
+                self._show_path()
+                self._show_subdirectives(H.interactive_prompt!='')
+                if H.interactive_prompt=='':
+                    return
+            choice=self._get_help_choice(init_keylist)
+        if H.exit:
+            self._endhelp()
+        return
+    
+def _make_doc(L,topname,toptext,fp,docname='',doctext=''):
+    if docname=='':
+        docname=f'``{topname}``'
+    if doctext=='':
+        doctext=toptext
+    fp.write(f'{docname}\n{"="*(len(docname))}\n\n')
+    fp.write(f'{doctext}\n\n')
+    svp=[d for d in L if 'directives' not in d]
+    svp_w_contdef=[d for d in svp if type(d.get('default',None)) in [dict,list]]
+    svp_simple=[d for d in svp if not type(d.get('default',None)) in [dict,list]]
+    sd= [d for d in L if 'directives'     in d]
+    if any([type(sv.get('default',None)) in [dict,list] for sv in svp]) or len(sd)>0:
+        if os.path.exists(topname):
+            shutil.rmtree(topname)
+        os.mkdir(topname)
+    if len(svp_simple)>0:
+        ess='s' if len(svp_simple)>1 else ''
+        fp.write(f'Single-valued parameter{ess}:\n\n')
+        for sv in svp_simple:
+            default=sv.get('default',None)
+            default_text=''
+            parname=f'``{sv["name"]}``'
+            if default!=None:
+                default_text=f' (default: {default})'
+            fp.write(f'  * {parname}: {sv["text"]}{default_text}\n\n')
+        fp.write('\n\n')
+    if len(svp_w_contdef)>0:
+        ess='s' if len(svp_w_contdef)>1 else ''
+        fp.write(f'Container-like parameter{ess}:\n\n')
+        fp.write('.. toctree::\n   :maxdepth: 1\n\n')
+        for s in svp_w_contdef:
+            fp.write(f'   {topname}/{s["name"]}\n')
+        fp.write('\n\n')
+
+    if len(sd)>0:
+        ess='s' if len(sd)>1 else ''
+        fp.write(f'Subdirective{ess}:\n\n')
+        fp.write('.. toctree::\n   :maxdepth: 1\n\n')
+        for s in sd:
+            fp.write(f'   {topname}/{s["name"]}\n')
+        fp.write('\n\n')
+    fp.close()
+    if len(svp_w_contdef)>0:
+        os.chdir(topname)
+        for s in svp_w_contdef:
+            name=s["name"]
+            default=s["default"] #must have
+            with open(f'{name}.rst','w') as f:
+                f.write(f'``{name}``\n{'-'*(4+len(name))}\n\n')
+                if type(default)==list:
+                    for d in default:
+                        f.write(f'  * {d}\n')
+                elif type(default)==dict:
+                    for k,v in default.items():
+                        f.write(f'  * ``{k}``: {v}\n')
+                f.write('\n\n')
+                f.close()
+        os.chdir('..')
+    if len(sd)>0:
+        os.chdir(topname)
+        for s in sd:
+            name=s["name"]
+            doc=s.get('docs',{})
+            with open(f'{name}.rst','w') as f:
+                _make_doc(s['directives'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''))
+        os.chdir('..')
 
 def _make_def(L,H,*args):
     """recursive generation of YAML-format default user-config hierarchy"""
@@ -113,40 +309,6 @@ def _make_def(L,H,*args):
             raise ValueError(f'{nextarg} is not a recognized directive')
         item=L[item_idx]
         _make_def(item["directives"],H,*args)
-
-def _userhelp(L,logf,*args,end=''):
-    """rescursive generation of help messages for directives and subdirectives"""
-    if len(args)==0:
-        logf(f'    Help available for {", ".join([dspec["name"] for dspec in L])}{end}')
-    elif len(args)==1:
-        name=args[0]
-        try:
-            item_idx=[x["name"] for x in L].index(name)
-        except:
-            raise ValueError(f'{name} is not a recognized directive')
-        item=L[item_idx]
-        logf(f'{item["name"]}:{end}')
-        logf(f'    {textwrap.fill(item["text"],subsequent_indent="      ")}{end}')
-        logf(f'    type: {item["type"]}{end}')
-        if "default" in item:
-            logf(f'    default: {item["default"]}{end}')
-        if "choices" in item:
-            logf(f'    allowed values: {", ".join(item["choices"])}{end}')
-        if item.get("required",False):
-            logf(f'    A value is required.{end}')
-        if "directives" in item:
-            _userhelp(item["directives"],logf,end=end)
-    else:
-        arglist=list(args)
-        nextarg=arglist.pop(0)
-        args=tuple(arglist)
-        try:
-            item_idx=[x["name"] for x in L].index(nextarg)
-        except:
-            raise ValueError(f'{nextarg} is not a recognized directive')
-        item=L[item_idx]
-        logf(f'{nextarg}->{end}')
-        _userhelp(item['directives'],logf,*args,end=end)
 
 def _mwalk(D1,D2):
     """With custom config from D2, update D1"""
@@ -289,3 +451,65 @@ def special_update(dict1,dict2):
             else:
                 dict1[k]=v # overwrite
     return dict1
+
+def oxford(a_list,conjunction='or'):
+    """insist on the use of the Oxford comma"""
+    if not a_list: return ''
+    if len(a_list)==1:
+        return a_list[0]
+    elif len(a_list)==2:
+        return f'{a_list[0]} {conjunction} {a_list[1]}'
+    else:
+        return ", ".join(a_list[:-1])+f', {conjunction} {a_list[-1]}'
+
+def makedoc(args):
+    config=args.config
+    root=args.root
+    Y=Yclept(config)
+    Y.make_doctree(root)
+
+def config_help(args):
+    config=args.config
+    arglist=args.arglist
+    exit_at_end=args.exit_at_end
+    interactive=args.i
+    interactive_prompt='help: ' if interactive else ''
+    Y=Yclept(config)
+    if args.write_func=='print':
+        write_func=print
+    Y.console_help(arglist,write_func=write_func,interactive_prompt=interactive_prompt,exit=exit_at_end)
+
+def cli():
+    commands={
+        'make-doc':makedoc,
+        'config-help':config_help,
+    }
+    helps={
+        'make-doc':'Makes a sphinx/rtd-style doctree from the base config file provided and, optionally, a root node',
+        'config-help':'Help on a base config file',
+    }
+    descs={
+        'make-doc':'If you provide the name of a base configuration file for your app, and optionally, a root directive, this command will generate a sphinx/rtd-style doctree',
+        'config-help':'If you provide the name of a base configuration file for your app, you can use this command to explore it the way a user would in your app'
+    }
+    parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
+    subparsers=parser.add_subparsers()
+    subparsers.required=False
+    command_parsers={}
+    for k in commands:
+        command_parsers[k]=subparsers.add_parser(k,description=descs[k],help=helps[k],formatter_class=ap.RawDescriptionHelpFormatter)
+        command_parsers[k].set_defaults(func=commands[k])
+    command_parsers['make-doc'].add_argument('config',type=str,default=None,help='input base configuration file in YAML format')
+    command_parsers['make-doc'].add_argument('--root',type=str,default=None,help='root directive to begin the doctree build from')
+    command_parsers['config-help'].add_argument('config',type=str,default=None,help='input base configuration file in YAML format')
+    command_parsers['config-help'].add_argument('arglist',type=str,nargs='*',default=[],help='space-separated directive tree traversal')
+    command_parsers['config-help'].add_argument('--write-func',type=str,default='print',help='space-separated directive tree traversal')
+    command_parsers['config-help'].add_argument('--i',type=bool,default=True,action=ap.BooleanOptionalAction,help='use help interactively')
+    command_parsers['config-help'].add_argument('--exit-at-end',type=bool,default=True,action=ap.BooleanOptionalAction,help='exit after help')
+
+    args=parser.parse_args()
+    if hasattr(args,'func'):
+        args.func(args)
+    else:
+        my_list=oxford(list(commands.keys()))
+        print(f'No subcommand found. Expected one of {my_list}')

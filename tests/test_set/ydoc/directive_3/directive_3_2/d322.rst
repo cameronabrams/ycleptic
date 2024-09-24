@@ -1,0 +1,14 @@
+``d322``
+========
+
+Directive 3.2.2 has a list of possible subdirectives
+
+Subdirectives:
+
+.. toctree::
+   :maxdepth: 1
+
+   d322/d322a
+   d322/d322b
+
+

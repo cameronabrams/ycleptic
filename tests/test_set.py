@@ -4,6 +4,7 @@ from ycleptic import resources
 import os
 from contextlib import redirect_stdout
 import yaml
+
 class TestYclept(unittest.TestCase):
     def test_example1(self):
         example1="""
@@ -178,13 +179,103 @@ directives:
         bfile=os.path.join(bdir,'example_base.yaml')
         Y=Yclept(bfile)
         with open('console-out.txt','w') as f:
-            with redirect_stdout(f):
-              Y.console_help(); nlines=1
-              Y.console_help('directive_1'); nlines+=4
-              Y.console_help('directive_2','directive_2a'); nlines+=5
-              Y.console_help('directive_3'); nlines+=4
-        self.assertTrue(os.path.exists('console-out.txt'))
+          with redirect_stdout(f):
+              Y.console_help([]);
         with open('console-out.txt','r') as f:
-            lines=f.read().split('\n')
-        self.assertEqual(len(lines),nlines+1) # for the final \n!
-        self.assertEqual(lines[0],'    Help available for directive_1, directive_2, directive_3')
+          test_str=f.read()
+          self.assertEqual(test_str,'    directive_1 ->\n    directive_2 ->\n    directive_3 ->\n')
+
+        with open('console-out.txt','w') as f:
+          with redirect_stdout(f):
+              Y.console_help(['directive_1']);
+        ref_str="""
+directive_1:
+    This is a description of Directive 1
+
+base|directive_1
+    directive_1_1
+    directive_1_2
+"""
+        with open('console-out.txt','r') as f:
+          test_str=f.read()
+          self.assertEqual(test_str,ref_str)
+
+        with open('console-out.txt','w') as f:
+          with redirect_stdout(f):
+              Y.console_help(['directive_1','directive_1_1']);
+        ref_str="""
+directive_1_1:
+    This is a description of Directive 1.1
+    default: [1, 2, 3]
+
+All subdirectives at the same level as 'directive_1_1':
+
+base|directive_1
+    directive_1_1
+    directive_1_2
+"""
+        with open('console-out.txt','r') as f:
+          test_str=f.read()
+          self.assertEqual(test_str,ref_str)
+
+        with open('console-out.txt','w') as f:
+          with redirect_stdout(f):
+              Y.console_help(['directive_2']);
+        ref_str="""
+directive_2:
+    Directive 2 is interpretable as an ordered list of directives
+
+base|directive_2
+    directive_2a ->
+    directive_2b ->
+"""
+        with open('console-out.txt','r') as f:
+          test_str=f.read()
+          self.assertEqual(test_str,ref_str)
+
+        with open('console-out.txt','w') as f:
+          with redirect_stdout(f):
+              Y.console_help(['directive_2','directive_2a']);
+        ref_str="""
+directive_2a:
+    Directive 2a is one possible directive in a user's list
+
+base|directive_2->directive_2a
+    d2a_val1
+    d2a_val2
+    d2_a_dict
+"""
+        with open('console-out.txt','r') as f:
+          test_str=f.read()
+          self.assertEqual(test_str,ref_str)
+
+    def test_makedoc(self):
+        bdir=os.path.dirname(resources.__file__)
+        bfile=os.path.join(bdir,'example_base.yaml')
+        Y=Yclept(bfile)
+        Y.make_doctree('ydoc')
+        self.assertTrue(os.path.exists('ydoc.rst'))
+        ref_str="""``ydoc``
+========
+
+Top-level directives
+
+Subdirectives:
+
+.. toctree::
+   :maxdepth: 1
+
+   ydoc/directive_1
+   ydoc/directive_2
+   ydoc/directive_3
+
+
+"""
+        with open('ydoc.rst','r') as f:
+            test_str=f.read()
+        self.assertEqual(test_str,ref_str)
+
+        self.assertTrue(os.path.isdir('ydoc'))
+        self.assertTrue(os.path.exists(os.path.join('ydoc','directive_1.rst')))
+        self.assertTrue(os.path.isdir(os.path.join('ydoc','directive_1')))
+        self.assertTrue(os.path.exists(os.path.join('ydoc','directive_1','directive_1_1.rst')))

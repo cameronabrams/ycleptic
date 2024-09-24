@@ -1,7 +1,7 @@
 # Ycleptic
-# (c) 2023 Cameron F. Abrams, 2023
+# (c) 2024 Cameron F. Abrams, <cfa22@drexel.edu>
 #
-# Format specification for a configuration file
+# Format specification for an example YAML configuration file
 #
 # The "name" of any directive may appear as a key whose value is specified by "type"
 # and any dependent "directives".  Values with scalar types should only appear

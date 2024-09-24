@@ -185,27 +185,40 @@ Suppose this is the content of ``config.py``:
 
 Here is an example of how the interactive help works:
 
-.. code-block:: python
+.. code-block:: console
 
   >>> from mypackage import MyConfig
   >>> c=MyConfig()
-  >>> c.console_help()
-      Help available for directive_1, directive_2, directive_3
+  >>> c.console_help([],interactive_prompt='help: ')
+      directive_1 ->
+      directive_2 ->
+      directive_3 ->
+      .. up
+      ! quit
+  help: 
 
-This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just add the directive names:
+This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just type one of the choices at the prompt:
 
-.. code-block:: python
+.. code-block:: console
 
-  >>> c.console_help('directive_1')
-  directive_1:
-    This is a description of Directive 1
-    type: dict
-    Help available for directive_1_1, directive_1_2
-  >>> c.console_help('directive_1','directive_1_2')
-  directive_1->
-  directive_1_2:
-    This is a description of Directive 1.2
-    type: str
+    >>> Y.console_help([],interactive_prompt='help: ')
+        directive_1 ->
+        directive_2 ->
+        directive_3 ->
+        .. up
+        ! quit
+    help: directive_1
+
+    directive_1:
+        This is a description of Directive 1
+
+    base|directive_1
+        directive_1_1
+        directive_1_2
+        .. up
+        ! quit
+    help: 
+
 
 In this way, you can interactively explore the whole structure of the base config, and learn how to write a user config.
 

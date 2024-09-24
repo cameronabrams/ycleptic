@@ -4,8 +4,10 @@
 YAML is a popular markup language for input files, with its easy syntax and clear
 mapping to lists and dicts.  Ycleptic allows a developer to specify all keys, datatypes,
 default values, choice restrictions, and other features of YAML-format input 
-files. This makes the specification of input file syntax on top of YAML for any 
-particular application a bit easier than just using pure YAML.
+files for use in their own apps. This makes the specification of input file syntax on top 
+of YAML for any particular application a bit easier than just using pure YAML.  In addition,
+ycleptic can also automatically build the RST/Sphinx doctree for your app's configuration
+file.
 
 ## Installation
 
@@ -16,6 +18,10 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.0.6
+    * interactive mode implemented
+    * `config-help` subcommand added
+    * `make-doc` subcommand added
 * 1.0.5
     * added support for a user dotfile/rcfile
 * 1.0.4

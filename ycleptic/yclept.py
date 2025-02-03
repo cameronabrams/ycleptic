@@ -115,7 +115,7 @@ class Yclept(UserDict):
             if "default" in item:
                 H.write_func(f'    default: {item["default"]}{end}')
             if "choices" in item:
-                H.write_func(f'    allowed values: {", ".join(item["choices"])}{end}')
+                H.write_func(f'    allowed values: {", ".join([str(_) for _ in item["choices"]])}{end}')
             if item.get("required",False):
                 H.write_func(f'    A value is required.{end}')
 

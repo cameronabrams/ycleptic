@@ -118,6 +118,11 @@ class Yclept(UserDict):
                 H.write_func(f'    allowed values: {", ".join([str(_) for _ in item["choices"]])}{end}')
             if item.get("required",False):
                 H.write_func(f'    A value is required.{end}')
+        else:
+            if "default" in item:
+                H.write_func(f'    default:{end}')
+                for k,v in item["default"].items():
+                    H.write_func(f'        {k}: {v}{end}')
 
     def _endhelp(self):
         self.H.write_func('Thank you for using ycleptic\'s interactive help!')

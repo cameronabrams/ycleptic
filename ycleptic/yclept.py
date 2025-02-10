@@ -77,7 +77,8 @@ class Yclept(UserDict):
     def make_doctree(self,topname='config_ref'):
         with open(f'{topname}.rst','w') as f:
             doc=self['base'].get('docs',{})
-            _make_doc(self['base']['directives'],topname,'Top-level directives',f,docname=doc.get('title',''),doctext=doc.get('text',''))
+            rootdir=os.getcwd()
+            _make_doc(self['base']['directives'],topname,'Top-level directives',f,docname=doc.get('title',''),doctext=doc.get('text',''),rootdir=rootdir)
 
     def dump_user(self,filename='complete-user.yaml'):
         """generates a full dump of the processed user config, including all implied default values
@@ -218,11 +219,18 @@ class Yclept(UserDict):
             self._endhelp()
         return
     
-def _make_doc(L,topname,toptext,fp,docname='',doctext=''):
+def _make_doc(L,topname,toptext,fp,docname='',doctext='',rootdir=''):
     if docname=='':
         docname=f'``{topname}``'
     if doctext=='':
         doctext=toptext
+    realpath=os.path.realpath(fp.name)
+    thispath=realpath.replace(os.path.commonpath([rootdir,realpath]),'')
+    if thispath[0]==os.sep:
+        thispath=thispath[1:]
+    thispath=os.path.splitext(thispath)[0]
+    print(f'"{thispath}"')
+    fp.write(f'.. _{" ".join(thispath.split(os.sep))}:\n\n')
     fp.write(f'{docname}\n{"="*(len(docname))}\n\n')
     fp.write(f'{doctext}\n\n')
     svp=[d for d in L if 'directives' not in d]
@@ -266,6 +274,8 @@ def _make_doc(L,topname,toptext,fp,docname='',doctext=''):
             name=s["name"]
             default=s["default"] #must have
             with open(f'{name}.rst','w') as f:
+                subpath=thispath+os.sep+name
+                f.write(f'.. _{" ".join(subpath.split(os.sep))}:\n\n')
                 f.write(f'``{name}``\n{"-"*(4+len(name))}\n\n')
                 if type(default)==list:
                     for d in default:
@@ -282,7 +292,7 @@ def _make_doc(L,topname,toptext,fp,docname='',doctext=''):
             name=s["name"]
             doc=s.get('docs',{})
             with open(f'{name}.rst','w') as f:
-                _make_doc(s['directives'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''))
+                _make_doc(s['directives'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''),rootdir=rootdir)
         os.chdir('..')
 
 def _make_def(L,H,*args):

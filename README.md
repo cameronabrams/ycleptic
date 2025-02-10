@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.2.0
+    * `make-doc` subcommand upgraded to put RST links at the top of every RST file
 * 1.1.0
     * bugfix: shows default values for any dict-type parameters
     * bugfix: `choices` in interactive help did not work with integer choices

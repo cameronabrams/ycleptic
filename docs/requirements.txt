@@ -1,6 +1,6 @@
 pillow 
 mock
-alabaste
+alabaster
 commonmark==0.9.1
 recommonmark==0.5.0
 sphinx 

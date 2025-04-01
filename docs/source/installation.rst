@@ -1,9 +1,6 @@
 Installation
 ============
 
-Installation
-------------
-
 To use Ycleptic, install it from PyPI:
 
 .. code-block:: console

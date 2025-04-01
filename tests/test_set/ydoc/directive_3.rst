@@ -1,3 +1,5 @@
+.. _ydoc directive_3:
+
 ``directive_3``
 ===============
 

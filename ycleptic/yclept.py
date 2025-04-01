@@ -36,7 +36,7 @@ class Yclept(UserDict):
     user: dict
         contents of user config file processed against the base config
     """
-    def __init__(self,basefile,userfile='',rcfile=''):
+    def __init__(self,basefile,userfile='',userdict={},rcfile=''):
         data={}
         with open(basefile,'r') as f:
             data["base"]=yaml.safe_load(f)
@@ -49,6 +49,8 @@ class Yclept(UserDict):
         if userfile:
             with open(userfile,'r') as f:
                 self["user"]=yaml.safe_load(f)
+        elif userdict:
+            self["user"]=userdict
         _dwalk(self["base"],self["user"])
         self["basefile"]=basefile
         self["userfile"]=userfile

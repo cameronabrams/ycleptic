@@ -101,6 +101,20 @@ directive_1:
         tv=user_dump['directive_3']['directive_3_1']['directive_3_1_1']['directive_3_1_1_1']['d3111v1']
         self.assertEqual(tv,'ABC')
 
+    def test_case_insensitive(self):
+        example1="""
+directive_4: abc123
+"""
+        with open('example1.yaml','w') as f:
+            f.write(example1)
+        bdir=os.path.dirname(resources.__file__)
+        bfile=os.path.join(bdir,'example_base.yaml')
+        ufile=os.path.join('example1.yaml')
+        Y=Yclept(bfile,userfile=ufile)
+        os.remove('example1.yaml')
+        self.assertTrue('directive_4' in Y["user"])
+        self.assertEqual(Y['user']['directive_4'],'ABC123')
+        
     def test_dotfile1(self):
         example1="""
 directive_2:

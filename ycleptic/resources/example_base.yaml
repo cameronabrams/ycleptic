@@ -114,3 +114,7 @@ directives:
                     type: str
                     text: name of file to save
                     default: flipfile.dat
+  - name: directive_4
+    type: str
+    text: This is a description of Directive 4
+    case_sensitive: False

@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.4.0
+    * `case_sensitive` boolean attribute enabled for all `str`-types
 * 1.3.0
     * `__init__` optionally accepts a dict instead of only a file name
 * 1.2.0

@@ -407,12 +407,16 @@ def _dwalk(D,I):
         else:
             if typ=='str':
                 case_sensitive=dx.get('case_sensitive',True)
-                # logger.debug(f'case_sensitive {case_sensitive}')
                 if not case_sensitive:
-                    I[d]=I[d].upper()
+                    I[d]=I[d].casefold()
+                # logger.debug(f'case_sensitive {case_sensitive}')
                 if 'choices' in dx:
-                # just check the choices that were provided by the user
-                    assert I[d] in dx['choices'],f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}'
+                    if not case_sensitive:
+                        # just check the choices that were provided by the user
+                        assert I[d] in [x.casefold() for x in dx['choices']],f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])} (case-insensitive); found \'{I[d]}\''
+                    else:
+                        # check the choices that were provided by the user
+                        assert I[d] in dx['choices'],f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}; found \'{I[d]}\''
             elif typ=='dict':
                 # process descendants
                 if 'directives' in dx:

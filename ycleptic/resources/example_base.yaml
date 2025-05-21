@@ -118,3 +118,11 @@ directives:
     type: str
     text: This is a description of Directive 4
     case_sensitive: False
+  - name: directive_5
+    type: str
+    text: This is a description of Directive 5
+    case_sensitive: False
+    choices:
+      - a
+      - b
+      - c

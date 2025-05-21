@@ -103,7 +103,8 @@ directive_1:
 
     def test_case_insensitive(self):
         example1="""
-directive_4: abc123
+directive_4: aBc123
+directive_5: A
 """
         with open('example1.yaml','w') as f:
             f.write(example1)
@@ -113,7 +114,8 @@ directive_4: abc123
         Y=Yclept(bfile,userfile=ufile)
         os.remove('example1.yaml')
         self.assertTrue('directive_4' in Y["user"])
-        self.assertEqual(Y['user']['directive_4'],'ABC123')
+        self.assertEqual(Y['user']['directive_4'],'abc123')
+        self.assertEqual(Y['user']['directive_5'],'a')
         
     def test_dotfile1(self):
         example1="""

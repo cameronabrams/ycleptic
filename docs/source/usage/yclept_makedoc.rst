@@ -5,22 +5,22 @@
 
 The command-line tool `yclept make-doc` allows you to generate an RST-style document tree from your base configuration file.  For example, if you have a base configuration file called `base.yaml` and your package is structured like this:
 
-.. code-block:: console
+.. code-block:: text
 
-   rootdir/
-     mypackage/
-       __init__.py
-       config.py
-       data/
-         __init__.py # so it can be imported like a module
-         base.yaml
-       docs/
-         source/
-           intro.rst
-       otherstuff/
-         stuff.py
-     setup.py
-     README.md
+   rootdir
+   ├── mypackage/
+   │   ├── config.py
+   │   ├── data/
+   │   │   ├── base.yaml
+   │   │   └── __init__.py
+   │   ├── docs/
+   │   │   └── source/
+   │   │       └── intro.rst
+   │   ├── __init__.py
+   │   └── otherstuff/
+   │       └── stuff.py
+   ├── README.md
+   └── setup.py
 
 To use ``yclept make-doc``, you would first change to the ``docs/source`` directory and then run the command:
 

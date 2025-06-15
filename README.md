@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.5.0
+    * `example` subfield in `docs` directive enabled
 * 1.4.1
     * `case_sensitive` boolean attribute enabled for all `str`-types
 * 1.3.0

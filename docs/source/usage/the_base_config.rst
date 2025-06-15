@@ -121,10 +121,11 @@ The base config must open with the single identifier ``directives``, under which
 
 In this case, there are subdirectives.  If the ``type`` was ``dict``, then the subdirectives are children of the parent directive and all operate at the same level.  If the ``type`` was ``list``, then the subdirectives defined are expected to be ordered as a list of tasks that the parent directive executes in the order they appear in the user's config file.  In the base file, both are entered as lists of directives.
 
-``text`` is just meant for helpful text describing the directive, and it can be completely free-form as long as it is on one line.
+``text`` is just meant for helpful text describing the directive, and it can be completely free-form as long as it is on one line or blocked multiline using ``|``.
 
-There are three other keys that a directive may have:
+There are four other keys that a directive may have:
 
 1. ``default``: as you might expect, this are default values to assign to the directive if the user "declares" the directive but does not provide it any values.
 2. ``required``:  a boolean.  If False, that means no defaults are assigned; if a user declares this directive without providing values, an error occurs, but a user need not declare this directive at all.  If True, the directive must be declared (and if it is nested, all the antecedant directives must also be declared).
 3. ``options``: a list of allowed values; if the user declares this directive with a value not in this list, an error occurs.
+4. ``docs``: this is a subdirective that can have ``title``, ``text``, and ``example`` keys.  ``title`` and ``text`` are strings used in automatic documentation generation using ``yclept make-doc``.  ``example`` is a YAML-format example of how to use the directive in a config file.  This is used in the documentation generation as well.

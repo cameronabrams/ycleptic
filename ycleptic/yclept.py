@@ -243,7 +243,8 @@ def _make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir='
     if doctext:
         fp.write(f'{doctext}\n\n')
     if docexample:
-        fp.write(f'Example:\n{'+'*len('Example:')}\n\n')
+        fp.write('Example:\n'+'+'*len('Example:')+'\n\n')
+        # fp.write(f'Example:\n{"+"*len("Example:")}\n\n')
         fp.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
     svp=[d for d in L if 'directives' not in d]
     svp_w_contdef=[d for d in svp if type(d.get('default',None)) in [dict,list]]
@@ -307,7 +308,7 @@ def _make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir='
                 if doctext:
                     f.write(f'{doctext}\n\n')
                 if docexample:
-                    f.write(f'Example:\n{'+'*len('Example:')}\n\n')
+                    f.write('Example:\n'+'+'*len('Example:')+'\n\n')
                     f.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
                 f.write(generate_footer(app_name=__package__, version=__version__,style=footer_style))
                 f.close()

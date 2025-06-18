@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.6.0
+    * `footer-style` argument added to `make-docs`
 * 1.5.0
     * `example` subfield in `docs` directive enabled
 * 1.4.1

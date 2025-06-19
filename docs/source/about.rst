@@ -7,4 +7,4 @@ Ycleptic requires you as a package developer to construct the "base" or "pattern
 
 Even better, the user always has ready access to a help functionality that explains the full configuration syntax, and since your base YAML file must include a text description of any parameter (or set of parameters, or set of set of parameters --- you get the idea), the help is as descriptive as you want it to be.
 
-Finally, Ycleptic provides a command-line tool ``yclept make-doc``, that can generate and RST-format documentation tree for your package's configuration.  This is a big deal because it means that you can keep your documentation up to date when you change your base config.  No more "out of date" documentation because you forgot to update it after changing the base configuration file.
+Finally, Ycleptic provides a command-line tool ``yclept make-doc``, that can generate an RST-format documentation tree for your package's configuration.  This is a big deal because it means that you can keep your documentation up to date when you change your base config.  No more "out of date" documentation because you forgot to update it after changing the base configuration file.

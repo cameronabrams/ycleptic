@@ -1,13 +1,13 @@
 # Configuration file for the Sphinx documentation builder.
 
 # -- Project information
+import importlib.metadata
 
 project = 'ycleptic'
+release = importlib.metadata.version(project)
+version = '.'.join(release.split('.')[:2])  # major.minor
 copyright = '2023-2025, Cameron F. Abrams'
 author = 'cfa22@drexel.edu'
-
-release = '1.6'
-version = '1.6.2'
 
 # -- General configuration
 
@@ -17,8 +17,13 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx_copybutton'
+    'sphinx_copybutton',
+    'sphinxcontrib.mermaid',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
 ]
+
+autosummary_generate = True  # Enable autosummary tables
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
@@ -70,3 +75,9 @@ html_static_path = ['_static']
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
+
+mermaid_params = ['--theme', 'dark', '--width', '600']
+
+def setup(app):
+    print("✅ Setting up custom directives...") 
+    app.add_css_file("css/custom.css")

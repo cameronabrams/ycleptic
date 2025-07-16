@@ -3,7 +3,7 @@
 The Base Configuration
 ========================
 
-The heart of ``ycleptic`` is the base configuration file, which the developer must write. The base configuration is the developer's expression of what a *user* can configure when they run the developer's app.  Below is an example:
+The heart of ``ycleptic`` is the base configuration file, which the app developer must write. The base configuration is the developer's expression of what a *user* can configure when they run the developer's app.  Below is an example:
 
 .. code-block:: yaml
 

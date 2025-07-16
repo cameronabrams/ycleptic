@@ -229,7 +229,7 @@ directives:
               Y.console_help([]);
         with open('console-out.txt','r') as f:
           test_str=f.read()
-          self.assertEqual(test_str,'    directive_1 ->\n    directive_2 ->\n    directive_3 ->\n')
+          self.assertEqual(test_str,'    directive_1 ->\n    directive_2 ->\n    directive_3 ->\n    directive_4\n    directive_5\n')
 
         with open('console-out.txt','w') as f:
           with redirect_stdout(f):
@@ -308,6 +308,14 @@ base|directive_2->directive_2a
 
 Top-level directives
 
+Single-valued parameters:
+
+  * ``directive_4``: This is a description of Directive 4
+
+  * ``directive_5``: This is a description of Directive 5
+
+
+
 Subdirectives:
 
 .. toctree::
@@ -318,9 +326,12 @@ Subdirectives:
    ydoc/directive_3
 
 
+----
 """
         with open('ydoc.rst','r') as f:
             test_str=f.read()
+            # remove everything after '----' since it will have a date stamp
+            test_str=test_str.split('----')[0]+'----\n'
         self.assertEqual(test_str,ref_str)
 
         self.assertTrue(os.path.isdir('ydoc'))

@@ -1,46 +1,38 @@
 # Author: Cameron F. Abrams, <cfa22@drexel.edu>
-"""A class for handling specialized YAML-format input files"""
-import argparse as ap
-import importlib.metadata
+"""
+A class for handling specialized YAML-format input files
+"""
+
 import logging
 import os
-import shutil
 import textwrap
 import yaml
 from collections import UserDict
 from argparse import Namespace
-from datetime import date
+from . import __version__
+from .makedoc import make_doc
+from .walkers import make_def, mwalk, dwalk
 
 logger=logging.getLogger(__name__)
 
-__version__=importlib.metadata.version("ycleptic")
-
-banner_message="""
-    {} v. {}
-    https://ycleptic.readthedocs.io/en/latest/
-
-    Cameron F. Abrams <cfa22@drexel.edu>
-
-    """.format(__package__.title(),__version__)
-
-def my_indent(text,indent=4):
-    i=' '*indent
-    return i+f'\n{i}'.join(text.split('\n'))
-
 class Yclept(UserDict):
-    """A inherited UserDict class for handling controlled YAML input
-    
-    Keys
-    ----
-    basefile: str
-        name of base config file
-    userfile: str, optional
-        name of user config file
-    base: dict
-        contents of base config file
-    user: dict
-        contents of user config file processed against the base config
     """
+    A class for handling specialized YAML-format input files, including a base config file and an optional user config file.  Inherits from :class:`collections.UserDict`.
+
+    This class reads a base config file and an optional user config file to generate an overal instance configuration state. It allows for recursive processing of directives and subdirectives, and provides methods for generating documentation and interactive help.
+    
+    Parameters
+    ----------
+    basefile : str
+        The path to the base config file.
+    userfile : str, optional
+        The path to the user config file. If not provided, an empty user config will be created.
+    userdict : dict, optional
+        A dictionary containing user-defined configurations. If provided, it will be used instead of reading from a user file.
+    rcfile : str, optional
+        The path to a resource config file that can be used to update the base config with additional settings. If not provided, no additional resource config will be applied.
+    """
+
     def __init__(self,basefile,userfile='',userdict={},rcfile=''):
         data={}
         with open(basefile,'r') as f:
@@ -48,7 +40,7 @@ class Yclept(UserDict):
         if rcfile:
             with open(rcfile,'r') as f:
                 rc=yaml.safe_load(f)
-                _mwalk(data["base"],rc)
+                mwalk(data["base"],rc)
         super().__init__(data)
         self["user"]={}
         if userfile:
@@ -56,16 +48,15 @@ class Yclept(UserDict):
                 self["user"]=yaml.safe_load(f)
         elif userdict:
             self["user"]=userdict
-        _dwalk(self["base"],self["user"])
+        dwalk(self["base"],self["user"])
         self["basefile"]=basefile
         self["userfile"]=userfile
         self["rcfile"]=rcfile
 
     def console_help(self,arglist,end='',**kwargs):
-        """Interactive help with base config structure
+        """
+        Interactive help with base config structure
         
-        Usage
-        -----
         If Y is an initialized instance of Yclept, then
 
         >>> Y.console_help()
@@ -82,36 +73,37 @@ class Yclept(UserDict):
         self._help()
 
     def make_doctree(self,topname='config_ref',footer_style='paragraph'):
+        """
+        Generates a Sphinx-style documentation tree from the base config file, including a root node.
+        """
         with open(f'{topname}.rst','w') as f:
             doc=self['base'].get('docs',{})
             rootdir=os.getcwd()
-            _make_doc(self['base']['directives'],topname,'Top-level directives',f,docname=doc.get('title',''),
+            make_doc(self['base']['directives'],topname,'Top-level directives',f,docname=doc.get('title',''),
                       doctext=doc.get('text',''),docexample=doc.get('example',{}), rootdir=rootdir,footer_style=footer_style)
 
     def dump_user(self,filename='complete-user.yaml'):
-        """generates a full dump of the processed user config, including all implied default values
-        
-        Arguments
-        ---------
-        filename: str, optional
-            name of file to write
+        """
+        Generates a full dump of the processed user config, including all implied default values
+
         """
         with open(filename,'w') as f:
-            f.write(f'# Ycleptic v {__version__} -- Cameron F. Abrams -- cfa22@drexel.edu\n')
+            f.write(f'# Ycleptic v {__version__}\n')
             f.write('# Dump of complete user config file\n')
             yaml.dump(self['user'],f)
 
     def make_default_specs(self,*args):
-        """generates a partial config based on NULL user input and specified
-        hierachty
-        
-        Arguments
-        ---------
-        args: tuple
-            directive hierachy to use as the root for the config
+        """
+        Generates a partial config based on NULL user input and specified
+        hierarchy
+
+        Parameters
+        ----------
+        args : str
+            The names of the directives to include in the partial config.
         """
         holder={}
-        _make_def(self['base']['directives'],holder,*args)
+        make_def(self['base']['directives'],holder,*args)
         return holder
 
     def _show_item(self,idx):
@@ -227,406 +219,4 @@ class Yclept(UserDict):
             self._endhelp()
         return
     
-def _make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir='',footer_style='paragraph'):
-    if docname=='':
-        docname=f'``{topname}``'
-    if doctext=='':
-        doctext=toptext
-    realpath=os.path.realpath(fp.name)
-    thispath=realpath.replace(os.path.commonpath([rootdir,realpath]),'')
-    if thispath[0]==os.sep:
-        thispath=thispath[1:]
-    thispath=os.path.splitext(thispath)[0]
-    print(f'"{thispath}"')
-    fp.write(f'.. _{" ".join(thispath.split(os.sep))}:\n\n')
-    fp.write(f'{docname}\n{"="*(len(docname))}\n\n')
-    if doctext:
-        fp.write(f'{doctext}\n\n')
-    if docexample:
-        fp.write('Example:\n'+'+'*len('Example:')+'\n\n')
-        # fp.write(f'Example:\n{"+"*len("Example:")}\n\n')
-        fp.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
-    svp=[d for d in L if 'directives' not in d]
-    svp_w_contdef=[d for d in svp if type(d.get('default',None)) in [dict,list]]
-    svp_simple=[d for d in svp if not type(d.get('default',None)) in [dict,list]]
-    sd= [d for d in L if 'directives'     in d]
-    if any([type(sv.get('default',None)) in [dict,list] for sv in svp]) or len(sd)>0:
-        if os.path.exists(topname):
-            shutil.rmtree(topname)
-        os.mkdir(topname)
-    if len(svp_simple)>0:
-        ess='s' if len(svp_simple)>1 else ''
-        fp.write(f'Single-valued parameter{ess}:\n\n')
-        for sv in svp_simple:
-            default=sv.get('default',None)
-            default_text=''
-            parname=f'``{sv["name"]}``'
-            if default!=None:
-                default_text=f' (default: {default})'
-            fp.write(f'  * {parname}: {sv["text"]}{default_text}\n\n')
-            docexample=sv.get('docs',{}).get('example',{})
-            if docexample:
-                fp.write(f'    Example:\n\n')
-                fp.write(f'{my_indent(dict_to_rst_yaml_block(docexample),indent=4)}\n\n')
-        fp.write('\n\n')
-    if len(svp_w_contdef)>0:
-        ess='s' if len(svp_w_contdef)>1 else ''
-        fp.write(f'Container-like parameter{ess}:\n\n')
-        fp.write('.. toctree::\n   :maxdepth: 1\n\n')
-        for s in svp_w_contdef:
-            fp.write(f'   {topname}/{s["name"]}\n')
-        fp.write('\n\n')
 
-    if len(sd)>0:
-        ess='s' if len(sd)>1 else ''
-        fp.write(f'Subdirective{ess}:\n\n')
-        fp.write('.. toctree::\n   :maxdepth: 1\n\n')
-        for s in sd:
-            fp.write(f'   {topname}/{s["name"]}\n')
-        fp.write('\n\n')
-    fp.write(generate_footer(app_name=__package__, version=__version__,style=footer_style))
-    fp.close()
-    if len(svp_w_contdef)>0:
-        os.chdir(topname)
-        for s in svp_w_contdef:
-            name=s["name"]
-            text=s.get('text','')
-            default=s["default"] #must have
-            doctext=s.get('docs',{}).get('text',text)
-            docexample=s.get('docs',{}).get('example',{})
-            with open(f'{name}.rst','w') as f:
-                subpath=thispath+os.sep+name
-                f.write(f'.. _{" ".join(subpath.split(os.sep))}:\n\n')
-                f.write(f'``{name}``\n{"-"*(4+len(name))}\n\n')
-                if type(default)==list:
-                    for d in default:
-                        f.write(f'  * {d}\n')
-                elif type(default)==dict:
-                    for k,v in default.items():
-                        f.write(f'  * ``{k}``: {v}\n')
-                f.write('\n\n')
-                if doctext:
-                    f.write(f'{doctext}\n\n')
-                if docexample:
-                    f.write('Example:\n'+'+'*len('Example:')+'\n\n')
-                    f.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
-                f.write(generate_footer(app_name=__package__, version=__version__,style=footer_style))
-                f.close()
-        os.chdir('..')
-    if len(sd)>0:
-        os.chdir(topname)
-        for s in sd:
-            name=s["name"]
-            doc=s.get('docs',{})
-            with open(f'{name}.rst','w') as f:
-                _make_doc(s['directives'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''),docexample=doc.get('example',{}),rootdir=rootdir,footer_style=footer_style)
-        os.chdir('..')
-
-def _make_def(L,H,*args):
-    """recursive generation of YAML-format default user-config hierarchy"""
-    if len(args)==1:
-        name=args[0]
-        try:
-            item_idx=[x["name"] for x in L].index(name)
-        except:
-            raise ValueError(f'{name} is not a recognized directive')
-        item=L[item_idx]
-        for d in item.get("directives",[]):
-            if "default" in d:
-                H[d["name"]]=d["default"]
-            else:
-                H[d["name"]]=None
-        if not "directives" in item:
-            if "default" in item:
-                H[item["name"]]=item["default"]
-            else:
-                H[item["name"]]=None
-    elif len(args)>1:
-        arglist=list(args)
-        nextarg=arglist.pop(0)
-        args=tuple(arglist)
-        try:
-            item_idx=[x["name"] for x in L].index(nextarg)
-        except:
-            raise ValueError(f'{nextarg} is not a recognized directive')
-        item=L[item_idx]
-        _make_def(item["directives"],H,*args)
-
-def _mwalk(D1,D2):
-    """With custom config from D2, update D1"""
-    assert 'directives' in D1
-    assert 'directives' in D2
-    tld1=[x['name'] for x in D1['directives']]
-    for d2 in D2['directives']:
-        if d2['name'] in tld1:
-            logger.debug(f'Config directive {d2["name"]} is in the dotfile')
-            didx=tld1.index(d2['name'])
-            d1=D1['directives'][didx]
-            if 'directives' in d1 and 'directives' in d2:
-                _mwalk(d1,d2)
-            else:
-                d1.update(d2)
-        else:
-            D1['directives'].append(d2)
-
-def _dwalk(D,I):
-    """Process the user's config-dict I by walking recursively through it 
-       along with the default config-specification dict D
-       
-       I is the dict yaml-read from the user input
-       D is thd config-specification dict yaml-read from the package resources
-    """
-    assert 'directives' in D # D must contain one or more directives
-    # get the name of each config directive at this level in this block
-    tld=[x['name'] for x in D['directives']]
-    if I==None:
-        raise ValueError(f'Null dictionary found; expected a dict with key(s) {tld} under \'{D["name"]}\'.')
-    # The user's config file is a dictionary whose keys must match directive names in the config
-    ud=list(I.keys())
-    for u in ud:
-        if not u in tld:
-            raise ValueError(f'Directive \'{u}\' invalid; expecting one of {tld} under \'{D["name"]}\'.')
-    # logger.debug(f'dwalk along {tld} for {I}')
-    # for each directive name
-    for d in tld:
-        # get its index in the list of directive names
-        tidx=tld.index(d)
-        # get its dictionary; D['directives'] is a list
-        dx=D['directives'][tidx]
-        # logger.debug(f' d {d}')
-        # get its type
-        typ=dx['type']
-        # logger.debug(f'- {d} typ {typ} I {I}')
-        # if this directive name does not already have a key in the result
-        if not d in I:
-            # logger.debug(f' -> not found {d}')
-            # if it is a scalar
-            if typ in ['str','int','float', 'bool']:
-                # if it has a default, set it
-                if 'default' in dx:
-                    I[d]=dx['default']
-                    # logger.debug(f' ->-> default {d} {I[d]}')
-                # if it is flagged as required, die since it is not in the read-in
-                elif 'required' in dx:
-                    if dx['required']:
-                        raise Exception(f'Directive \'{d}\' of \'{D["name"]}\' requires a value.')
-            # if it is a dict
-            elif typ=='dict':
-                # if it is explicitly tagged as not required, do nothing
-                if 'required' in dx:
-                    if not dx['required']:
-                        continue
-                # whether required or not, set it as empty and continue the walk,
-                # which will set defaults for all descendants
-                if 'directives' in dx:
-                    I[d]={}
-                    _dwalk(dx,I[d])
-                else:
-                    I[d]=dx.get('default',{})
-            elif typ=='list':
-                if 'required' in dx:
-                    if not dx['required']:
-                        continue
-                I[d]=dx.get('default',[])
-        # this directive does appear in I
-        else:
-            if typ=='str':
-                case_sensitive=dx.get('case_sensitive',True)
-                if not case_sensitive:
-                    I[d]=I[d].casefold()
-                # logger.debug(f'case_sensitive {case_sensitive}')
-                if 'choices' in dx:
-                    if not case_sensitive:
-                        # just check the choices that were provided by the user
-                        assert I[d] in [x.casefold() for x in dx['choices']],f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])} (case-insensitive); found \'{I[d]}\''
-                    else:
-                        # check the choices that were provided by the user
-                        assert I[d] in dx['choices'],f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}; found \'{I[d]}\''
-            elif typ=='dict':
-                # process descendants
-                if 'directives' in dx:
-                    _dwalk(dx,I[d])
-                else:
-                    special_update(dx.get('default',{}),I[d])
-            elif typ=='list':
-                # process list-item children
-                if 'directives' in dx:
-                    _lwalk(dx,I[d])
-                else:
-                    defaults=dx.get('default',[])
-                    I[d]=defaults+I[d]
-
-def _lwalk(D,L):
-    assert 'directives' in D
-    tld=[x['name'] for x in D['directives']]
-    # logger.debug(f'lwalk on {tld}')
-    for item in L:
-        # check this item against its directive
-        itemname=list(item.keys())[0]
-        # logger.debug(f' - item {item}')
-        if not itemname in tld:
-            raise ValueError(f'Element \'{itemname}\' of list \'{D["name"]}\' is not valid; expected one of {tld}')
-        tidx=tld.index(itemname)
-        dx=D['directives'][tidx]
-        typ=dx['type']
-        if typ in ['str','int','float']:
-            # because a list directive indicates an ordered sequence of tasks and we expect each
-            # task to be a dictionary specifying the task and not a single scalar value,
-            # we will ignore this one
-            logger.debug(f'Warning: Scalar list-element-directive \'{dx}\' in \'{dx["name"]}\' ignored.')
-        elif typ=='dict':
-            if not item[itemname]:
-                item[itemname]={}
-            _dwalk(dx,item[itemname])
-        else:
-            logger.debug(f'Warning: List-element-directive \'{itemname}\' in \'{dx["name"]}\' ignored.')
-
-def special_update(dict1,dict2):
-    """Update dict1 with values from dict2 in a "special" way so that
-    any list values are appended rather than overwritten
-    """
-    # print(f'special update {dict1} {dict2}')
-    for k,v in dict2.items():
-        ov=dict1.get(k,None)
-        if not ov:
-            dict1[k]=v
-        else:
-            if type(v)==list and type(ov)==list:
-                logger.debug(f'merging {v} into {ov}')
-                for nv in v:
-                    if not nv in ov:
-                        logger.debug(f'appending {nv}')
-                        ov.append(nv)
-            elif type(v)==dict and type(ov)==dict:
-                ov.update(v)
-            else:
-                dict1[k]=v # overwrite
-    return dict1
-
-def generate_footer(app_name=__package__, version=__version__, style="paragraph"):
-    today = date.today().isoformat()
-    if style == "comment":
-        return f".. This file was generated by {app_name} v{version} on {today}."
-
-    elif style == "rubric":
-        return f"""
-.. rubric:: Generated Documentation
-
-*Created by {app_name} v{version} on {today}.*
-""".strip()
-
-    elif style == "paragraph":
-        return f"""
-----
-
-This page was automatically generated by **{app_name}** v{version} on {today}.
-""".strip()
-
-    elif style == "note":
-        return f"""
-.. note::
-
-   This file was automatically generated by *{app_name}* version {version} on {today}.
-""".strip()
-    elif style == "raw-html":
-        return f"""
-.. raw:: html
-
-   <div class="autogen-footer">
-     <p>This page was generated by {app_name} v{version} on {today}.</p>
-   </div>
-""".strip()
-    else:
-        raise ValueError(f"Unknown style '{style}'. Choose from 'comment', 'rubric', 'paragraph', or 'note'.")
-
-def dict_to_rst_yaml_block(data: dict) -> str:
-    """ by ChatGPT 4o on 2025-06-15 """
-    class LiteralString(str): pass
-
-    def literal_str_representer(dumper, value):
-        return dumper.represent_scalar('tag:yaml.org,2002:str', value, style='|')
-
-    yaml.add_representer(LiteralString, literal_str_representer)
-
-    def convert_multiline_strings(obj):
-        if isinstance(obj, dict):
-            return {k: convert_multiline_strings(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_multiline_strings(v) for v in obj]
-        elif isinstance(obj, str) and '\n' in obj:
-            return LiteralString(obj)
-        else:
-            return obj
-
-    data = convert_multiline_strings(data)
-    yaml_str = yaml.dump(data, sort_keys=False)
-
-    # Indent each line by 3 spaces to comply with reST code block indentation
-    indented_yaml = '\n'.join('   ' + line if line.strip() else '' for line in yaml_str.splitlines())
-
-    return f".. code-block:: yaml\n\n{indented_yaml}"
-
-def oxford(a_list,conjunction='or'):
-    """insist on the use of the Oxford comma"""
-    if not a_list: return ''
-    if len(a_list)==1:
-        return a_list[0]
-    elif len(a_list)==2:
-        return f'{a_list[0]} {conjunction} {a_list[1]}'
-    else:
-        return ", ".join(a_list[:-1])+f', {conjunction} {a_list[-1]}'
-
-def makedoc(args):
-    config=args.config
-    root=args.root
-    footer_style=args.footer_style
-    Y=Yclept(config)
-    Y.make_doctree(root,footer_style=footer_style)
-
-def config_help(args):
-    config=args.config
-    arglist=args.arglist
-    exit_at_end=args.exit_at_end
-    interactive=args.i
-    interactive_prompt='help: ' if interactive else ''
-    Y=Yclept(config)
-    if args.write_func=='print':
-        write_func=print
-    Y.console_help(arglist,write_func=write_func,interactive_prompt=interactive_prompt,exit=exit_at_end)
-
-def cli():
-    commands={
-        'make-doc':makedoc,
-        'config-help':config_help,
-    }
-    helps={
-        'make-doc':'Makes a sphinx/rtd-style doctree from the base config file provided and, optionally, a root node',
-        'config-help':'Help on a base config file',
-    }
-    descs={
-        'make-doc':'If you provide the name of a base configuration file for your app, and optionally, a root directive, this command will generate a sphinx/rtd-style doctree',
-        'config-help':'If you provide the name of a base configuration file for your app, you can use this command to explore it the way a user would in your app'
-    }
-    parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
-    subparsers=parser.add_subparsers()
-    subparsers.required=False
-    command_parsers={}
-    for k in commands:
-        command_parsers[k]=subparsers.add_parser(k,description=descs[k],help=helps[k],formatter_class=ap.RawDescriptionHelpFormatter)
-        command_parsers[k].set_defaults(func=commands[k])
-    command_parsers['make-doc'].add_argument('config',type=str,default=None,help='input base configuration file in YAML format')
-    command_parsers['make-doc'].add_argument('--root',type=str,default=None,help='root directive to begin the doctree build from')
-    command_parsers['make-doc'].add_argument('--footer-style',type=str,default='paragraph',choices=['paragraph','comment','rubric','note','raw-html'],
-                                             help='footer style for the generated documentation; one of "paragraph", "comment", "rubric", "note", or "raw-html"')
-    command_parsers['config-help'].add_argument('config',type=str,default=None,help='input base configuration file in YAML format')
-    command_parsers['config-help'].add_argument('arglist',type=str,nargs='*',default=[],help='space-separated directive tree traversal')
-    command_parsers['config-help'].add_argument('--write-func',type=str,default='print',help='space-separated directive tree traversal')
-    command_parsers['config-help'].add_argument('--i',type=bool,default=True,action=ap.BooleanOptionalAction,help='use help interactively')
-    command_parsers['config-help'].add_argument('--exit-at-end',type=bool,default=True,action=ap.BooleanOptionalAction,help='exit after help')
-
-    args=parser.parse_args()
-    if hasattr(args,'func'):
-        args.func(args)
-    else:
-        my_list=oxford(list(commands.keys()))
-        print(f'No subcommand found. Expected one of {my_list}')

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "ycleptic"
-version = "1.6.2"
+version = "1.7.0"
 authors = [
   { name="Cameron F Abrams", email="cfa22@drexel.edu" },
 ]
@@ -19,7 +19,7 @@ dependencies = [
     "pyyaml>=6"
 ]
 [project.scripts]
-yclept = "ycleptic.yclept:cli"
+yclept = "ycleptic.cli:cli"
 [project.urls]
 "Source" = "https://github.com/cameronabrams/ycleptic"
 "Documentation" = "https://ycleptic.readthedocs.io/en/latest/"

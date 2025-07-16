@@ -18,8 +18,10 @@ Contents
 --------
 
 .. toctree::
-
+   :maxdepth: 1
+   
    about
    installation
    usage
+   API <api/API>
 

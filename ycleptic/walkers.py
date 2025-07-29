@@ -112,6 +112,9 @@ def dwalk(D,I):
         # logger.debug(f' d {d}')
         # get its type
         typ=dx['type']
+        if typ=='dict' and (d in I and not type(I[d])==dict):
+            raise_clean(ValueError(f'Directive \'{d}\' of \'{D["name"]}\' must be a dict; found {type(I[d])}.'))
+        # logger.debug(f' - {d} typ {typ} I {I[d]}
         # logger.debug(f'- {d} typ {typ} I {I}')
         # if this directive name does not already have a key in the result
         if not d in I:

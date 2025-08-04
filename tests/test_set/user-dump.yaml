@@ -1,4 +1,4 @@
-# Ycleptic v 1.7.0
+# Ycleptic v 1.8.0
 # Dump of complete user config file
 directive_1:
   directive_1_1:
@@ -12,6 +12,7 @@ directive_2:
     val2: let us begin
 - directive_2a:
     d2_a_dict:
+      a: 123
       b: 765
       c: 789
     d2a_val1: 99.999

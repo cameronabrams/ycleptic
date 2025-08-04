@@ -7,7 +7,7 @@ Utilities for modifying dictionary entries in the directive tree
 import logging
 logger=logging.getLogger(__name__)
 
-def special_update(dict1,dict2):
+def special_update(dict1, dict2):
     """
     Updates dict1 with values from dict2 in a "special" way so that
     any list values are appended rather than overwritten
@@ -24,6 +24,7 @@ def special_update(dict1,dict2):
     dict
         The updated dict1 with values from dict2 merged in.
     """
+    # print(dict1, dict2)
     for k,v in dict2.items():
         ov=dict1.get(k,None)
         if not ov:
@@ -39,5 +40,6 @@ def special_update(dict1,dict2):
                 ov.update(v)
             else:
                 dict1[k]=v # overwrite
+    # print(dict1)
     return dict1
 

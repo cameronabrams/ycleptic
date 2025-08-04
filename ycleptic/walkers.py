@@ -168,7 +168,7 @@ def dwalk(D,I):
                 if 'directives' in dx:
                     dwalk(dx,I[d])
                 else:
-                    special_update(dx.get('default',{}),I[d])
+                    I[d]=special_update(dx.get('default',{}),I[d])
             elif typ=='list':
                 # process list-item children
                 if 'directives' in dx:

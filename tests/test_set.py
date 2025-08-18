@@ -37,6 +37,42 @@ directive_1:
         # this is the default value:
         self.assertEqual(Y['user']['directive_2'][1]['directive_2a']['d2a_val2'],6)
 
+    def test_update_user(self):
+        example1="""
+directive_2:
+  - directive_2b:
+      val1: hello
+      val2: let us begin
+  - directive_2a:
+      d2a_val1: 99.999
+      d2_a_dict:
+        b: 765
+        c: 789
+  - directive_2b:
+      val1: goodbye
+      val2: we are done
+directive_1:
+  directive_1_2: valA
+"""
+        with open('example1.yaml','w') as f:
+            f.write(example1)
+        with open('example1.yaml','r') as f:
+            userdict=yaml.safe_load(f)
+        bdir=os.path.dirname(resources.__file__)
+        bfile=os.path.join(bdir,'example_base.yaml')
+        Y=Yclept(bfile,userdict=userdict)
+        new_data = {
+            'directive_2': [
+                {'directive_2b': {'val1': 'new value', 'val2': 'updated value'}},
+                {'directive_2a': {'d2a_val1': 100, 'd2a_val2': 7, 'd2_a_dict': {'b': 800, 'c': 900}}},
+                {'directive_2b': {'val1': 'farewell', 'val2': 'the end'}}
+            ]
+        }
+        Y.update_user(new_data)
+        self.assertEqual(Y['user']['directive_2'][0]['directive_2b']['val1'], 'new value')
+        self.assertEqual(Y['user']['directive_2'][1]['directive_2a']['d2a_val1'], 100)
+        self.assertEqual(Y['user']['directive_2'][2]['directive_2b']['val2'], 'the end')
+
     def test_example1(self):
         example1="""
 directive_2:

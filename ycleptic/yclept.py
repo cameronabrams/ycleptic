@@ -33,27 +33,39 @@ class Yclept(UserDict):
         The path to a resource config file that can be used to update the base config with additional settings. If not provided, no additional resource config will be applied.
     """
 
-    def __init__(self,basefile,userfile='',userdict={},rcfile=''):
-        data={}
-        with open(basefile,'r') as f:
-            data["base"]=yaml.safe_load(f)
+    def __init__(self, basefile, userfile='', userdict={}, rcfile=''):
+        data = {}
+        with open(basefile, 'r') as f:
+            data["base"] = yaml.safe_load(f)
         if rcfile:
-            with open(rcfile,'r') as f:
-                rc=yaml.safe_load(f)
-                mwalk(data["base"],rc)
+            with open(rcfile, 'r') as f:
+                rc = yaml.safe_load(f)
+                mwalk(data["base"], rc)
         super().__init__(data)
-        self["user"]={}
+        self["user"] = {}
         if userfile:
-            with open(userfile,'r') as f:
-                self["user"]=yaml.safe_load(f)
+            with open(userfile, 'r') as f:
+                self["user"] = yaml.safe_load(f)
         elif userdict:
-            self["user"]=userdict
-        dwalk(self["base"],self["user"])
-        self["basefile"]=basefile
-        self["userfile"]=userfile
-        self["rcfile"]=rcfile
+            self["user"] = userdict
+        dwalk(self["base"], self["user"])
+        self["basefile"] = basefile
+        self["userfile"] = userfile
+        self["rcfile"] = rcfile
 
-    def console_help(self,arglist,end='',**kwargs):
+    def update_user(self, new_data):
+        """
+        Update the user configuration with new data.
+
+        Parameters
+        ----------
+        new_data : dict
+            A dictionary containing the new user configuration data.
+        """
+        self["user"].update(new_data)
+        dwalk(self["base"], self["user"])
+
+    def console_help(self, arglist, end='', **kwargs):
         """
         Interactive help with base config structure
         

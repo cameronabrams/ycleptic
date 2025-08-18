@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 1.9.0
+    * new `update_user` method
 * 1.8.1
     * fixed faulty special update of dict-like values with defaults
 * 1.8.0

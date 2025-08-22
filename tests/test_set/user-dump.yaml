@@ -1,29 +1,29 @@
-# Ycleptic v 1.8.1
+# Ycleptic v 1.9.0
 # Dump of complete user config file
-directive_1:
-  directive_1_1:
+attribute_1:
+  attribute_1_1:
   - 1
   - 2
   - 3
-  directive_1_2: valA
-directive_2:
-- directive_2b:
+  attribute_1_2: valA
+attribute_2:
+- attribute_2b:
     val1: hello
     val2: let us begin
-- directive_2a:
+- attribute_2a:
     d2_a_dict:
       a: 123
       b: 765
       c: 789
     d2a_val1: 99.999
     d2a_val2: 6
-- directive_2b:
+- attribute_2b:
     val1: goodbye
     val2: we are done
-directive_3:
-  directive_3_1:
-    directive_3_1_1:
-      directive_3_1_1_1:
+attribute_3:
+  attribute_3_1:
+    attribute_3_1_1:
+      attribute_3_1_1_1:
         d3111v1: ABC
-  directive_3_2:
+  attribute_3_2:
     d322: []

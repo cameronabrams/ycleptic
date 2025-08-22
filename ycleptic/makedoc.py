@@ -13,12 +13,12 @@ def make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir=''
     """
     Makes a sphinx/rtd-style doctree from the base config file provided including a root node.
     
-    This is a recursive function that will create a directory structure based on the directives and subdirectives in the provided list `L`. It will create a main file with the name `topname` and write the documentation for the top-level directives, as well as any subdirectives or single-valued parameters.
+    This is a recursive function that will create a directory structure based on the attributes and subattributes in the provided list `L`. It will create a main file with the name `topname` and write the documentation for the top-level attributes, as well as any subattributes or single-valued parameters.
     
     Parameters
     ----------
     L : list of dict
-        List of directives and subdirectives to document.
+        List of attributes and subattributes to document.
     topname : str
         The name of the top-level documentation file (without extension).
     toptext : str
@@ -55,10 +55,10 @@ def make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir=''
         fp.write('Example:\n'+'+'*len('Example:')+'\n\n')
         # fp.write(f'Example:\n{"+"*len("Example:")}\n\n')
         fp.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
-    svp=[d for d in L if 'directives' not in d]
+    svp=[d for d in L if 'attributes' not in d]
     svp_w_contdef=[d for d in svp if type(d.get('default',None)) in [dict,list]]
     svp_simple=[d for d in svp if not type(d.get('default',None)) in [dict,list]]
-    sd= [d for d in L if 'directives'     in d]
+    sd= [d for d in L if 'attributes'     in d]
     if any([type(sv.get('default',None)) in [dict,list] for sv in svp]) or len(sd)>0:
         if os.path.exists(topname):
             shutil.rmtree(topname)
@@ -88,7 +88,7 @@ def make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir=''
 
     if len(sd)>0:
         ess='s' if len(sd)>1 else ''
-        fp.write(f'Subdirective{ess}:\n\n')
+        fp.write(f'Subattribute{ess}:\n\n')
         fp.write('.. toctree::\n   :maxdepth: 1\n\n')
         for s in sd:
             fp.write(f'   {topname}/{s["name"]}\n')
@@ -128,6 +128,6 @@ def make_doc(L,topname,toptext,fp,docname='',doctext='',docexample={},rootdir=''
             name=s["name"]
             doc=s.get('docs',{})
             with open(f'{name}.rst','w') as f:
-                make_doc(s['directives'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''),docexample=doc.get('example',{}),rootdir=rootdir,footer_style=footer_style)
+                make_doc(s['attributes'],name,s['text'],f,docname=doc.get('title',''),doctext=doc.get('text',''),docexample=doc.get('example',{}),rootdir=rootdir,footer_style=footer_style)
         os.chdir('..')
 

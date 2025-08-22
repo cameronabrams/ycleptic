@@ -1,15 +1,15 @@
 
-directive_2:
-  - directive_2b:
+attribute_2:
+  - attribute_2b:
       val1: hello
       val2: let us begin
-  - directive_2a:
+  - attribute_2a:
       d2a_val1: 99.999
       d2_a_dict:
         b: 765
         c: 789
-  - directive_2b:
+  - attribute_2b:
       val1: goodbye
       val2: we are done
-directive_1:
-  directive_1_2: valA
+attribute_1:
+  attribute_1_2: valA

@@ -1,47 +1,47 @@
 # Ycleptic
-# (c) 2024 Cameron F. Abrams, <cfa22@drexel.edu>
+# (c) 2024-2025 Cameron F. Abrams, <cfa22@drexel.edu>
 #
 # Format specification for an example YAML configuration file
 #
-# The "name" of any directive may appear as a key whose value is specified by "type"
-# and any dependent "directives".  Values with scalar types should only appear
-# once in any directive set.  Values with list types may have multiple instances
-# of each dependent directive.
+# The "name" of any attribute may appear as a key whose value is specified by "type"
+# and any dependent "attributes".  Values with scalar types should only appear
+# once in any attribute set.  Values with list types may have multiple instances
+# of each dependent attribute.
 #
 # use "required: True" for scalar values that have no defaults but must be specified
 # use "required: False" for any values that should not be assigned defaults
 #
-directives:
-  - name: directive_1
+attributes:
+  - name: attribute_1
     type: dict
-    text: This is a description of Directive 1
-    directives:
-      - name: directive_1_1
+    text: This is a description of Attribute 1
+    attributes:
+      - name: attribute_1_1
         type: list
-        text: This is a description of Directive 1.1
+        text: This is a description of Attribute 1.1
         default:
           - 1
           - 2
           - 3
-      - name: directive_1_2
+      - name: attribute_1_2
         type: str
-        text: This is a description of Directive 1.2
+        text: This is a description of Attribute 1.2
         options: [ValA, ValB]
-  - name: directive_2
+  - name: attribute_2
     type: list
-    text: Directive 2 is interpretable as an ordered list of directives
-    directives:
-      - name: directive_2a
+    text: Attribute 2 is interpretable as an ordered list of attributes
+    attributes:
+      - name: attribute_2a
         type: dict
-        text: Directive 2a is one possible directive in a user's list
-        directives:
+        text: Attribute 2a is one possible attribute in a user's list
+        attributes:
           - name: d2a_val1
             type: float
-            text: A floating point value for Value 1 of Directive 2a
+            text: A floating point value for Value 1 of Attribute 2a
             default: 1.0
           - name: d2a_val2
             type: int
-            text: An int for Value 2 of Directive 2a
+            text: An int for Value 2 of Attribute 2a
             default: 6
           - name: d2_a_dict
             type: dict
@@ -50,10 +50,10 @@ directives:
               a: 123
               b: 567
               c: 987
-      - name: directive_2b
+      - name: attribute_2b
         type: dict
-        text: Directive 2b is another possible directive
-        directives:
+        text: Attribute 2b is another possible attribute
+        attributes:
           - name: val1
             type: str
             text: Val 1 of D2b
@@ -62,22 +62,22 @@ directives:
             type: str
             text: Val 2 of D2b
             default: a_not_so_nice_value
-  - name: directive_3
+  - name: attribute_3
     type: dict
-    text: Directive 3 has a lot of nesting
-    directives:
-      - name: directive_3_1
+    text: Attribute 3 has a lot of nesting
+    attributes:
+      - name: attribute_3_1
         type: dict
-        text: This is a description of Directive 3.1
-        directives:
-          - name: directive_3_1_1
+        text: This is a description of Attribute 3.1
+        attributes:
+          - name: attribute_3_1_1
             type: dict
-            text: This is a description of Directive 3.1.1
-            directives:
-              - name: directive_3_1_1_1
+            text: This is a description of Attribute 3.1.1
+            attributes:
+              - name: attribute_3_1_1_1
                 type: dict
-                text: This is a description of Directive 3.1.1.1
-                directives:
+                text: This is a description of Attribute 3.1.1.1
+                attributes:
                   - name: d3111v1
                     type: str
                     text: Value 1 of D 3.1.1.1
@@ -86,18 +86,18 @@ directives:
                     type: float
                     text: Value 2 of D 3.1.1.1
                     required: False
-      - name: directive_3_2
+      - name: attribute_3_2
         type: dict
-        text: This is a description of Directive 3.2
-        directives:
+        text: This is a description of Attribute 3.2
+        attributes:
           - name: d322
             type: list
-            text: Directive 3.2.2 has a list of possible subdirectives
-            directives:
+            text: Attribute 3.2.2 has a list of possible subattributes
+            attributes:
               - name: d322a
                 type: dict
                 text: D 3.2.2a executes a series of flips
-                directives:
+                attributes:
                   - name: nflips
                     type: int
                     text: Number of flips
@@ -108,19 +108,19 @@ directives:
                     options: ['x','y','z']
               - name: d322b
                 type: dict
-                text: Subdirective D 3.2.2b saves the result
-                directives:
+                text: Subattribute D 3.2.2b saves the result
+                attributes:
                   - name: filename
                     type: str
                     text: name of file to save
                     default: flipfile.dat
-  - name: directive_4
+  - name: attribute_4
     type: str
-    text: This is a description of Directive 4
+    text: This is a description of Attribute 4
     case_sensitive: False
-  - name: directive_5
+  - name: attribute_5
     type: str
-    text: This is a description of Directive 5
+    text: This is a description of Attribute 5
     case_sensitive: False
     choices:
       - a

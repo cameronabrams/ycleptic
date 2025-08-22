@@ -5,12 +5,17 @@ Utilities for modifying dictionary entries in the directive tree
 """
 
 import logging
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-def special_update(dict1, dict2):
+def special_update(dict1: dict, dict2: dict):
     """
     Updates dict1 with values from dict2 in a "special" way so that
-    any list values are appended rather than overwritten
+    any values that are list-like are appended rather than overwritten,
+    and dict-like values are updated.
+    For each key:value pair in dict2,
+       - if the value is a list and the existing value at key in dict1 is also a list, append the dict2 values to dict1
+       - if the value is a dict and the existing value is also a dict, merge them
+       - otherwise, overwrite the existing value
 
     Parameters
     ----------
@@ -24,22 +29,18 @@ def special_update(dict1, dict2):
     dict
         The updated dict1 with values from dict2 merged in.
     """
-    # print(dict1, dict2)
-    for k,v in dict2.items():
-        ov=dict1.get(k,None)
+    for k, v in dict2.items():
+        ov = dict1.get(k, None)
         if not ov:
-            dict1[k]=v
+            dict1[k] = v
         else:
-            if type(v)==list and type(ov)==list:
-                logger.debug(f'merging {v} into {ov}')
+            if type(v) == list and type(ov) == list:
                 for nv in v:
                     if not nv in ov:
-                        logger.debug(f'appending {nv}')
                         ov.append(nv)
-            elif type(v)==dict and type(ov)==dict:
+            elif type(v) == dict and type(ov) == dict:
                 ov.update(v)
             else:
-                dict1[k]=v # overwrite
-    # print(dict1)
+                dict1[k] = v  # overwrite
     return dict1
 

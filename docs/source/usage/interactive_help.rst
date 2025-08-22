@@ -25,31 +25,31 @@ Here is an example of how the interactive help works:
   >>> from mypackage import MyConfig
   >>> c=MyConfig()
   >>> c.console_help([],interactive_prompt='help: ')
-      directive_1 ->
-      directive_2 ->
-      directive_3 ->
+      attribute_1 ->
+      attribute_2 ->
+      attribute_3 ->
       .. up
       ! quit
   help: 
 
-This reflects the fact that the three top-level directives available are called ``directive_1``, ``directive_2``, and ``directive_3``, respectively.  To drill down, you just type one of the choices at the prompt:
+This reflects the fact that the three top-level attributes available are called ``attribute_1``, ``attribute_2``, and ``attribute_3``, respectively.  To drill down, you just type one of the choices at the prompt:
 
 .. code-block:: console
 
     >>> Y.console_help([],interactive_prompt='help: ')
-        directive_1 ->
-        directive_2 ->
-        directive_3 ->
+        attribute_1 ->
+        attribute_2 ->
+        attribute_3 ->
         .. up
         ! quit
-    help: directive_1
+    help: attribute_1
 
-    directive_1:
+    attribute_1:
         This is a description of Directive 1
 
-    base|directive_1
-        directive_1_1
-        directive_1_2
+    base|attribute_1
+        attribute_1_1
+        attribute_1_2
         .. up
         ! quit
     help: 

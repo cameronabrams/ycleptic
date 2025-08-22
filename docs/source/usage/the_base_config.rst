@@ -7,30 +7,30 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
 
 .. code-block:: yaml
 
-  directives:
-    - name: directive_1
+  attributes:
+    - name: attribute_1
       type: dict
       text: This is a description of Directive 1
-      directives:
-        - name: directive_1_1
+      attributes:
+        - name: attribute_1_1
           type: list
           text: This is a description of Directive 1.1
           default:
             - 1
             - 2
             - 3
-        - name: directive_1_2
+        - name: attribute_1_2
           type: str
           text: This is a description of Directive 1.2
           options: [ValA, ValB]
-    - name: directive_2
+    - name: attribute_2
       type: list
-      text: Directive 2 is interpretable as an ordered list of directives
-      directives:
-        - name: directive_2a
+      text: Directive 2 is interpretable as an ordered list of attributes
+      attributes:
+        - name: attribute_2a
           type: dict
-          text: Directive 2a is one possible directive in a user's list
-          directives:
+          text: Directive 2a is one possible attribute in a user's list
+          attributes:
             - name: d2a_val1
               type: float
               text: A floating point value for Value 1 of Directive 2a
@@ -46,10 +46,10 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                 a: 123
                 b: 567
                 c: 987
-        - name: directive_2b
+        - name: attribute_2b
           type: dict
-          text: Directive 2b is another possible directive
-          directives:
+          text: Directive 2b is another possible attribute
+          attributes:
             - name: val1
               type: str
               text: Val 1 of D2b
@@ -58,22 +58,22 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
               type: str
               text: Val 2 of D2b
               default: a_not_so_nice_value
-    - name: directive_3
+    - name: attribute_3
       type: dict
       text: Directive 3 has a lot of nesting
-      directives:
-        - name: directive_3_1
+      attributes:
+        - name: attribute_3_1
           type: dict
           text: This is a description of Directive 3.1
-          directives:
-            - name: directive_3_1_1
+          attributes:
+            - name: attribute_3_1_1
               type: dict
               text: This is a description of Directive 3.1.1
-              directives:
-                - name: directive_3_1_1_1
+              attributes:
+                - name: attribute_3_1_1_1
                   type: dict
                   text: This is a description of Directive 3.1.1.1
-                  directives:
+                  attributes:
                     - name: d3111v1
                       type: str
                       text: Value 1 of D 3.1.1.1
@@ -82,18 +82,18 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                       type: float
                       text: Value 2 of D 3.1.1.1
                       required: False
-        - name: directive_3_2
+        - name: attribute_3_2
           type: dict
           text: This is a description of Directive 3.2
-          directives:
+          attributes:
             - name: d322
               type: list
-              text: Directive 3.2.2 has a list of possible subdirectives
-              directives:
+              text: Directive 3.2.2 has a list of possible subattributes
+              attributes:
                 - name: d322a
                   type: dict
                   text: D 3.2.2a executes a series of flips
-                  directives:
+                  attributes:
                     - name: nflips
                       type: int
                       text: Number of flips
@@ -104,28 +104,28 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                       options: ['x','y','z']
                 - name: d322b
                   type: dict
-                  text: Subdirective D 3.2.2b saves the result
-                  directives:
+                  text: Subattribute D 3.2.2b saves the result
+                  attributes:
                     - name: filename
                       type: str
                       text: name of file to save
                       default: flipfile.dat
 
 
-The base config must open with the single identifier ``directives``, under which is a list of one or more top-level directives.  A directive is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
+The base config must open with the single identifier ``attributes``, under which is a list of one or more top-level attributes.  A attribute is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
 
-``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``list``, or ``dict``.  The data content in a directive is of type ``type`` unless two conditions are met:
+``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``list``, or ``dict``.  The data content in a attribute is of type ``type`` unless two conditions are met:
 
 1. ``type`` is either ``list`` or ``dict``; and
-2. the keyword ``directives`` is present.
+2. the keyword ``attributes`` is present.
 
-In this case, there are subdirectives.  If the ``type`` was ``dict``, then the subdirectives are children of the parent directive and all operate at the same level.  If the ``type`` was ``list``, then the subdirectives defined are expected to be ordered as a list of tasks that the parent directive executes in the order they appear in the user's config file.  In the base file, both are entered as lists of directives.
+In this case, there are subattributes.  If the ``type`` was ``dict``, then the subattributes are children of the parent attribute and all operate at the same level.  If the ``type`` was ``list``, then the subattributes defined are expected to be ordered as a list of tasks that the parent attribute executes in the order they appear in the user's config file.  In the base file, both are entered as lists of attributes.
 
-``text`` is just meant for helpful text describing the directive, and it can be completely free-form as long as it is on one line or blocked multiline using ``|``.
+``text`` is just meant for helpful text describing the attribute, and it can be completely free-form as long as it is on one line or blocked multiline using ``|``.
 
-There are four other keys that a directive may have:
+There are four other keys that a attribute may have:
 
-1. ``default``: as you might expect, this are default values to assign to the directive if the user "declares" the directive but does not provide it any values.
-2. ``required``:  a boolean.  If False, that means no defaults are assigned; if a user declares this directive without providing values, an error occurs, but a user need not declare this directive at all.  If True, the directive must be declared (and if it is nested, all the antecedant directives must also be declared).
-3. ``options``: a list of allowed values; if the user declares this directive with a value not in this list, an error occurs.
-4. ``docs``: this is a subdirective that can have ``title``, ``text``, and ``example`` keys.  ``title`` and ``text`` are strings used in automatic documentation generation using ``yclept make-doc``.  ``example`` is a YAML-format example of how to use the directive in a config file.  This is used in the documentation generation as well.
+1. ``default``: as you might expect, this are default values to assign to the attribute if the user "declares" the attribute but does not provide it any values.
+2. ``required``:  a boolean.  If False, that means no defaults are assigned; if a user declares this attribute without providing values, an error occurs, but a user need not declare this attribute at all.  If True, the attribute must be declared (and if it is nested, all the antecedant attributes must also be declared).
+3. ``options``: a list of allowed values; if the user declares this attribute with a value not in this list, an error occurs.
+4. ``docs``: this is a subattribute that can have ``title``, ``text``, and ``example`` keys.  ``title`` and ``text`` are strings used in automatic documentation generation using ``yclept make-doc``.  ``example`` is a YAML-format example of how to use the attribute in a config file.  This is used in the documentation generation as well.

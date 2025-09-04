@@ -10,34 +10,34 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
   attributes:
     - name: attribute_1
       type: dict
-      text: This is a description of Directive 1
+      text: This is a description of Attribute 1
       attributes:
         - name: attribute_1_1
           type: list
-          text: This is a description of Directive 1.1
+          text: This is a description of Attribute 1.1
           default:
             - 1
             - 2
             - 3
         - name: attribute_1_2
           type: str
-          text: This is a description of Directive 1.2
+          text: This is a description of Attribute 1.2
           options: [ValA, ValB]
     - name: attribute_2
       type: list
-      text: Directive 2 is interpretable as an ordered list of attributes
+      text: Attribute 2 is interpretable as an ordered list of attributes
       attributes:
         - name: attribute_2a
           type: dict
-          text: Directive 2a is one possible attribute in a user's list
+          text: Attribute 2a is one possible attribute in a user's list
           attributes:
             - name: d2a_val1
               type: float
-              text: A floating point value for Value 1 of Directive 2a
+              text: A floating point value for Value 1 of Attribute 2a
               default: 1.0
             - name: d2a_val2
               type: int
-              text: An int for Value 2 of Directive 2a
+              text: An int for Value 2 of Attribute 2a
               default: 6
             - name: d2_a_dict
               type: dict
@@ -48,7 +48,7 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                 c: 987
         - name: attribute_2b
           type: dict
-          text: Directive 2b is another possible attribute
+          text: Attribute 2b is another possible attribute
           attributes:
             - name: val1
               type: str
@@ -60,19 +60,19 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
               default: a_not_so_nice_value
     - name: attribute_3
       type: dict
-      text: Directive 3 has a lot of nesting
+      text: Attribute 3 has a lot of nesting
       attributes:
         - name: attribute_3_1
           type: dict
-          text: This is a description of Directive 3.1
+          text: This is a description of Attribute 3.1
           attributes:
             - name: attribute_3_1_1
               type: dict
-              text: This is a description of Directive 3.1.1
+              text: This is a description of Attribute 3.1.1
               attributes:
                 - name: attribute_3_1_1_1
                   type: dict
-                  text: This is a description of Directive 3.1.1.1
+                  text: This is a description of Attribute 3.1.1.1
                   attributes:
                     - name: d3111v1
                       type: str
@@ -84,11 +84,11 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                       required: False
         - name: attribute_3_2
           type: dict
-          text: This is a description of Directive 3.2
+          text: This is a description of Attribute 3.2
           attributes:
             - name: d322
               type: list
-              text: Directive 3.2.2 has a list of possible subattributes
+              text: Attribute 3.2.2 has a list of possible subattributes
               attributes:
                 - name: d322a
                   type: dict
@@ -112,7 +112,7 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                       default: flipfile.dat
 
 
-The base config must open with the single identifier ``attributes``, under which is a list of one or more top-level attributes.  A attribute is a dictionary with keys ``name``, ``type``, and ``text``, and then data content.
+The base config must open with the single identifier ``attributes``, under which is a list of one or more top-level attributes.  Every attribute must have a declared type, and attributes can be nested.
 
 ``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``list``, or ``dict``.  The data content in a attribute is of type ``type`` unless two conditions are met:
 

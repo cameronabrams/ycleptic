@@ -18,6 +18,8 @@ pip install ycleptic
 Once installed, the developer has access to the ``Yclept`` class.
 
 ## Release History
+* 2.0.2
+    * refactored to change `directive` to `attribute` throughout
 * 1.9.0
     * new `update_user` method
 * 1.8.1

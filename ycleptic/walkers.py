@@ -93,7 +93,7 @@ def dwalk(D: dict, I: dict):
         The user's config dictionary to be processed.
     """
     if not 'attributes' in D:
-        raise ValueError(f'Directive {D["name"]} has no attributes; cannot walk through it.')
+        raise ValueError(f'Attribute {D["name"]} has no attributes; cannot walk through it.')
     # get the name of each config attribute at this level in this block
     tld = [x['name'] for x in D['attributes']]
     if I == None:
@@ -102,7 +102,7 @@ def dwalk(D: dict, I: dict):
     ud = list(I.keys())
     for u in ud:
         if not u in tld:
-            raise_clean(ValueError(f'Directive \'{u}\' invalid; expecting one of {tld} under \'{D["name"]}\'.'))
+            raise_clean(ValueError(f'Attribute \'{u}\' invalid; expecting one of {tld} under \'{D["name"]}\'.'))
     # logger.debug(f'dwalk along {tld} for {I}')
     # for each attribute name
     for d in tld:
@@ -114,7 +114,7 @@ def dwalk(D: dict, I: dict):
         # get its type
         typ = dx['type']
         if typ == 'dict' and (d in I and not type(I[d]) == dict):
-            raise_clean(ValueError(f'Directive \'{d}\' of \'{D["name"]}\' must be a dict; found {type(I[d])}.'))
+            raise_clean(ValueError(f'Attribute \'{d}\' of \'{D["name"]}\' must be a dict; found {type(I[d])}.'))
         # logger.debug(f' - {d} typ {typ} I {I[d]}
         # logger.debug(f'- {d} typ {typ} I {I}')
         # if this attribute name does not already have a key in the result
@@ -129,7 +129,7 @@ def dwalk(D: dict, I: dict):
                 # if it is flagged as required, die since it is not in the read-in
                 elif 'required' in dx:
                     if dx['required']:
-                        raise_clean(ValueError(f'Directive \'{d}\' of \'{D["name"]}\' requires a value.'))
+                        raise_clean(ValueError(f'Attribute \'{d}\' of \'{D["name"]}\' requires a value.'))
             # if it is a dict
             elif typ == 'dict':
                 # if it is explicitly tagged as not required, do nothing
@@ -159,11 +159,11 @@ def dwalk(D: dict, I: dict):
                     if not case_sensitive:
                         # just check the choices that were provided by the user
                         if not I[d].casefold() in [x.casefold() for x in dx['choices']]:
-                            raise_clean(ValueError(f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])} (case-insensitive); found \'{I[d]}\''))
+                            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])} (case-insensitive); found \'{I[d]}\''))
                     else:
                         # check the choices that were provided by the user
                         if not I[d] in dx['choices']:
-                            raise_clean(ValueError(f'Directive \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}; found \'{I[d]}\''))
+                            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}; found \'{I[d]}\''))
             elif typ == 'dict':
                 # process descendants
                 if 'attributes' in dx:
@@ -179,7 +179,7 @@ def dwalk(D: dict, I: dict):
                     I[d] = defaults + I[d]
             elif typ == 'tuple':
                 if 'attributes' in dx:
-                    raise_clean(TypeError(f'Directive \'{d}\' of \'{D["name"]}\' cannot have subattributes.'))
+                    raise_clean(TypeError(f'Attribute \'{d}\' of \'{D["name"]}\' cannot have subattributes.'))
                 I[d] = dx.get('default', ())
 
 def lwalk(D: dict, L: list[dict]):

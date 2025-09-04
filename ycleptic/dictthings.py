@@ -1,7 +1,7 @@
 # Author: Cameron F. Abrams <cfa22@drexel.edu>
 
 """
-Utilities for modifying dictionary entries in the directive tree
+Utilities for modifying dictionary entries in the Attribute tree
 """
 
 import logging

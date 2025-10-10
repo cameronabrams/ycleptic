@@ -53,7 +53,7 @@ class Yclept(UserDict):
         self["userfile"] = userfile
         self["rcfile"] = rcfile
 
-    def update_user(self, new_data):
+    def update_user(self, new_data: dict = {}):
         """
         Update the user configuration with new data.
 

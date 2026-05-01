@@ -1,8 +1,0 @@
-
-attribute_2a:
-    Attribute 2a is one possible attribute in a user's list
-
-base|attribute_2->attribute_2a
-    d2a_val1
-    d2a_val2
-    d2_a_dict

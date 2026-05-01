@@ -3,7 +3,7 @@
 """
 Utilities for modifying dictionary entries in the Attribute tree
 """
-
+from __future__ import annotations
 import logging
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,11 @@ def special_update(dict1: dict, dict2: dict):
         if not ov:
             dict1[k] = v
         else:
-            if type(v) == list and type(ov) == list:
+            if isinstance(v, list) and isinstance(ov, list):
                 for nv in v:
                     if not nv in ov:
                         ov.append(nv)
-            elif type(v) == dict and type(ov) == dict:
+            elif isinstance(v, dict) and isinstance(ov, dict):
                 ov.update(v)
             else:
                 dict1[k] = v  # overwrite

@@ -21,6 +21,7 @@ extensions = [
     'sphinxcontrib.mermaid',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'myst_parser',
 ]
 
 autosummary_generate = True  # Enable autosummary tables
@@ -79,5 +80,4 @@ epub_show_urls = 'footnote'
 mermaid_params = ['--theme', 'dark', '--width', '600']
 
 def setup(app):
-    print("✅ Setting up custom directives...") 
     app.add_css_file("css/custom.css")

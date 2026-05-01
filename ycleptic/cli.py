@@ -3,7 +3,7 @@
 """
 Command-line interface for ycleptic
 """
-
+from __future__ import annotations
 from .yclept import Yclept, __version__
 import argparse as ap
 import textwrap
@@ -30,6 +30,8 @@ def config_help(args):
     interactive_prompt = 'help: ' if interactive else ''
     Y = Yclept(config)
     if args.write_func == 'print':
+        write_func = print
+    else:
         write_func = print
     Y.console_help(arglist, write_func=write_func, interactive_prompt=interactive_prompt, exit=exit_at_end)
 

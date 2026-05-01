@@ -78,6 +78,14 @@ instance/
 docs/_build/
 docs/source/_build
 
+# Test-generated output files
+tests/test_set/example1.yaml
+tests/test_set/user-dump.yaml
+tests/test_set/console-out.txt
+tests/test_set/ydoc.rst
+tests/test_set/ydoc/
+tests/test_set/rcfile.yaml
+
 # PyBuilder
 target/
 

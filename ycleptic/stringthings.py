@@ -3,6 +3,7 @@
 """
 Various string manipulation functions for ycleptic
 """
+from __future__ import annotations
 import yaml
 from datetime import date
 import sys
@@ -22,7 +23,7 @@ def raise_clean(ErrorInstance):
 
     Parameters
     ----------
-    ErrorInstance: Exception instance
+    ErrorInstance : Exception
         The exception instance to raise.
     """
     try:

@@ -1,8 +1,11 @@
 # Author: Cameron F. Abrams <cfa22@drexel.edu>
 
+import logging
 from importlib.metadata import version, PackageNotFoundError
 
 try:
     __version__ = version("ycleptic")
 except PackageNotFoundError:
     __version__ = "unknown"
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())

@@ -3,6 +3,7 @@
 """
 Recursive functions that traverse the attribute tree for setting values
 """
+from __future__ import annotations
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def make_def(L: list[dict], H: dict, *args):
         name = args[0]
         try:
             item_idx = [x["name"] for x in L].index(name)
-        except:
+        except ValueError:
             raise_clean(ValueError(f'{name} is not a recognized attribute'))
         item = L[item_idx]
         for d in item.get("attributes", []):
@@ -47,7 +48,7 @@ def make_def(L: list[dict], H: dict, *args):
         args = tuple(arglist)
         try:
             item_idx = [x["name"] for x in L].index(nextarg)
-        except:
+        except ValueError:
             raise ValueError(f'{nextarg} is not a recognized attribute')
         item = L[item_idx]
         make_def(item["attributes"], H, *args)
@@ -92,17 +93,18 @@ def dwalk(D: dict, I: dict):
     I : dict
         The user's config dictionary to be processed.
     """
+    dname = D.get("name", "root")
     if not 'attributes' in D:
-        raise ValueError(f'Attribute {D["name"]} has no attributes; cannot walk through it.')
+        raise ValueError(f'Attribute {dname} has no attributes; cannot walk through it.')
     # get the name of each config attribute at this level in this block
     tld = [x['name'] for x in D['attributes']]
     if I == None:
-        raise ValueError(f'Null dictionary found; expected a dict with key(s) {tld} under \'{D["name"]}\'.')
+        raise ValueError(f'Null dictionary found; expected a dict with key(s) {tld} under \'{dname}\'.')
     # The user's config file is a dictionary whose keys must match attribute names in the config
     ud = list(I.keys())
     for u in ud:
         if not u in tld:
-            raise_clean(ValueError(f'Attribute \'{u}\' invalid; expecting one of {tld} under \'{D["name"]}\'.'))
+            raise_clean(ValueError(f'Attribute \'{u}\' invalid; expecting one of {tld} under \'{dname}\'.'))
     # logger.debug(f'dwalk along {tld} for {I}')
     # for each attribute name
     for d in tld:
@@ -113,8 +115,8 @@ def dwalk(D: dict, I: dict):
         # logger.debug(f' d {d}')
         # get its type
         typ = dx['type']
-        if typ == 'dict' and (d in I and not type(I[d]) == dict):
-            raise_clean(ValueError(f'Attribute \'{d}\' of \'{D["name"]}\' must be a dict; found {type(I[d])}.'))
+        if typ == 'dict' and (d in I and not isinstance(I[d], dict)):
+            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dname}\' must be a dict; found {type(I[d])}.'))
         # logger.debug(f' - {d} typ {typ} I {I[d]}
         # logger.debug(f'- {d} typ {typ} I {I}')
         # if this attribute name does not already have a key in the result
@@ -129,7 +131,7 @@ def dwalk(D: dict, I: dict):
                 # if it is flagged as required, die since it is not in the read-in
                 elif 'required' in dx:
                     if dx['required']:
-                        raise_clean(ValueError(f'Attribute \'{d}\' of \'{D["name"]}\' requires a value.'))
+                        raise_clean(ValueError(f'Attribute \'{d}\' of \'{dname}\' requires a value.'))
             # if it is a dict
             elif typ == 'dict':
                 # if it is explicitly tagged as not required, do nothing
@@ -179,7 +181,7 @@ def dwalk(D: dict, I: dict):
                     I[d] = defaults + I[d]
             elif typ == 'tuple':
                 if 'attributes' in dx:
-                    raise_clean(TypeError(f'Attribute \'{d}\' of \'{D["name"]}\' cannot have subattributes.'))
+                    raise_clean(TypeError(f'Attribute \'{d}\' of \'{dname}\' cannot have subattributes.'))
                 I[d] = dx.get('default', ())
 
 def lwalk(D: dict, L: list[dict]):

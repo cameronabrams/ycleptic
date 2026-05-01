@@ -3,9 +3,9 @@
 ``Yclept`` Class
 ====================
 
-Installation of Ycleptic gives access to the :class:`Yclept` class.
+Installation of Ycleptic gives access to the :class:`ycleptic.yclept.Yclept` class.
 
-The :class:`Yclept` class is meant to be used inside any Python package where the developer
+The :class:`ycleptic.yclept.Yclept` class is meant to be used inside any Python package where the developer
 wants to specify the allowed formats, expected values, default values, required
 values, etc., of a YAML-format configuration file for the developer's app.
 
@@ -30,7 +30,7 @@ To use ``ycleptic`` in your app, you must create a base configuration file that 
 
 ``base.yaml`` is a base configuration file. More about that file in a moment.
 
-You then might like to create a "config" class for your package that inherits :class:`Yclept`, and initialize it with your base config and a user config. For example:
+You then might like to create a "config" class for your package that inherits :class:`ycleptic.yclept.Yclept`, and initialize it with your base config and a user config. For example:
 
 .. code-block:: python
 

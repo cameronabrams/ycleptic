@@ -2,10 +2,11 @@
 """
 A class for handling specialized YAML-format input files
 """
-
+from __future__ import annotations
 import logging
-import os
+import sys
 import textwrap
+from pathlib import Path
 import yaml
 from collections import UserDict
 from argparse import Namespace
@@ -25,15 +26,15 @@ class Yclept(UserDict):
     ----------
     basefile : str
         The path to the base config file.
-    userfile : str, optional
-        The path to the user config file. If not provided, an empty user config will be created.
-    userdict : dict, optional
-        A dictionary containing user-defined configurations. If provided, it will be used instead of reading from a user file.
-    rcfile : str, optional
-        The path to a resource config file that can be used to update the base config with additional settings. If not provided, no additional resource config will be applied.
+    userfile : str
+        The path to the user config file. Optional; if omitted an empty user config is created.
+    userdict : dict
+        A dictionary of user-defined configurations. Optional; used instead of ``userfile`` when provided.
+    rcfile : str
+        The path to a resource config file that extends the base config. Optional.
     """
 
-    def __init__(self, basefile: str, userfile: str = '', userdict: dict = {}, rcfile: str = ''):
+    def __init__(self, basefile: str, userfile: str = '', userdict: dict = None, rcfile: str = ''):
         data = {}
         with open(basefile, 'r') as f:
             data["base"] = yaml.safe_load(f)
@@ -42,6 +43,8 @@ class Yclept(UserDict):
                 rc = yaml.safe_load(f)
                 mwalk(data["base"], rc)
         super().__init__(data)
+        if userdict is None:
+            userdict = {}
         self["user"] = {}
         if userfile:
             with open(userfile, 'r') as f:
@@ -53,7 +56,7 @@ class Yclept(UserDict):
         self["userfile"] = userfile
         self["rcfile"] = rcfile
 
-    def update_user(self, new_data: dict = {}):
+    def update_user(self, new_data: dict = None):
         """
         Update the user configuration with new data.
 
@@ -62,6 +65,8 @@ class Yclept(UserDict):
         new_data : dict
             A dictionary containing the new user configuration data.
         """
+        if new_data is None:
+            new_data = {}
         self["user"].update(new_data)
         dwalk(self["base"], self["user"])
 
@@ -87,12 +92,19 @@ class Yclept(UserDict):
     def make_doctree(self, topname: str = 'config_ref', footer_style: str = 'paragraph'):
         """
         Generates a Sphinx-style documentation tree from the base config file, including a root node.
+
+        ``topname`` may be a bare name (``config_ref``) or a path
+        (``docs/source/config_ref``), allowing the command to be run from
+        any directory without a prior ``cd``.
         """
+        top = Path(topname)
+        rootdir = str(top.parent.resolve())
+        doc = self['base'].get('docs', {})
         with open(f'{topname}.rst', 'w') as f:
-            doc = self['base'].get('docs', {})
-            rootdir = os.getcwd()
-            make_doc(self['base']['attributes'], topname, 'Top-level attributes', f, docname=doc.get('title', ''),
-                      doctext=doc.get('text', ''), docexample=doc.get('example', {}), rootdir=rootdir, footer_style=footer_style)
+            make_doc(self['base']['attributes'], top.name, 'Top-level attributes', f,
+                     docname=doc.get('title', ''), doctext=doc.get('text', ''),
+                     docexample=doc.get('example', {}), rootdir=rootdir,
+                     footer_style=footer_style)
 
     def dump_user(self, filename: str = 'complete-user.yaml'):
         """
@@ -139,7 +151,7 @@ class Yclept(UserDict):
 
     def _endhelp(self):
         self.H.write_func('Thank you for using ycleptic\'s interactive help!')
-        exit(0)
+        sys.exit(0)
 
     def _show_path(self):
         self.H.write_func('\nbase|' + '->'.join(self.path))

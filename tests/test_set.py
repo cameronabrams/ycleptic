@@ -1,13 +1,17 @@
+import shutil
 import unittest
-from ycleptic.yclept import Yclept
-from ycleptic import resources
-import os
 from contextlib import redirect_stdout
+import os
 import yaml
 
-class TestYclept(unittest.TestCase):
-    def test_userdict(self):
-        example1="""
+from ycleptic.yclept import Yclept
+from ycleptic import resources
+from ycleptic.dictthings import special_update
+from ycleptic.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
+
+BFILE = os.path.join(os.path.dirname(resources.__file__), 'example_base.yaml')
+
+EXAMPLE1_YAML = """
 attribute_2:
   - attribute_2b:
       val1: hello
@@ -23,44 +27,42 @@ attribute_2:
 attribute_1:
   attribute_1_2: valA
 """
-        with open('example1.yaml','w') as f:
-            f.write(example1)
-        with open('example1.yaml','r') as f:
-            userdict=yaml.safe_load(f)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        Y=Yclept(bfile,userdict=userdict)
+
+
+class TestYclept(unittest.TestCase):
+
+    def tearDown(self):
+        for fname in ['example1.yaml', 'user-dump.yaml', 'console-out.txt',
+                      'rcfile.yaml', 'req_base.yaml']:
+            if os.path.exists(fname):
+                os.remove(fname)
+        if os.path.exists('ydoc.rst'):
+            os.remove('ydoc.rst')
+        if os.path.isdir('ydoc'):
+            shutil.rmtree('ydoc')
+
+    # ------------------------------------------------------------------
+    # Existing tests (preserved)
+    # ------------------------------------------------------------------
+
+    def test_userdict(self):
+        with open('example1.yaml', 'w') as f:
+            f.write(EXAMPLE1_YAML)
+        with open('example1.yaml', 'r') as f:
+            userdict = yaml.safe_load(f)
+        Y = Yclept(BFILE, userdict=userdict)
         self.assertTrue('attribute_2' in Y["user"])
-        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'],'hello')
-        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'],765)
-        self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'],'we are done')
-        # this is the default value:
-        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2a_val2'],6)
+        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'], 'hello')
+        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'], 765)
+        self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'], 'we are done')
+        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2a_val2'], 6)
 
     def test_update_user(self):
-        example1="""
-attribute_2:
-  - attribute_2b:
-      val1: hello
-      val2: let us begin
-  - attribute_2a:
-      d2a_val1: 99.999
-      d2_a_dict:
-        b: 765
-        c: 789
-  - attribute_2b:
-      val1: goodbye
-      val2: we are done
-attribute_1:
-  attribute_1_2: valA
-"""
-        with open('example1.yaml','w') as f:
-            f.write(example1)
-        with open('example1.yaml','r') as f:
-            userdict=yaml.safe_load(f)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        Y=Yclept(bfile,userdict=userdict)
+        with open('example1.yaml', 'w') as f:
+            f.write(EXAMPLE1_YAML)
+        with open('example1.yaml', 'r') as f:
+            userdict = yaml.safe_load(f)
+        Y = Yclept(BFILE, userdict=userdict)
         new_data = {
             'attribute_2': [
                 {'attribute_2b': {'val1': 'new value', 'val2': 'updated value'}},
@@ -74,103 +76,37 @@ attribute_1:
         self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'], 'the end')
 
     def test_example1(self):
-        example1="""
-attribute_2:
-  - attribute_2b:
-      val1: hello
-      val2: let us begin
-  - attribute_2a:
-      d2a_val1: 99.999
-      d2_a_dict:
-        b: 765
-        c: 789
-  - attribute_2b:
-      val1: goodbye
-      val2: we are done
-attribute_1:
-  attribute_1_2: valA
-"""
-        with open('example1.yaml','w') as f:
-            f.write(example1)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        ufile=os.path.join('example1.yaml')
-        Y=Yclept(bfile,userfile=ufile)
-        os.remove('example1.yaml')
+        with open('example1.yaml', 'w') as f:
+            f.write(EXAMPLE1_YAML)
+        Y = Yclept(BFILE, userfile='example1.yaml')
         self.assertTrue('attribute_2' in Y["user"])
-        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'],'hello')
-        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'],765)
-        self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'],'we are done')
-        # this is the default value:
-        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2a_val2'],6)
-        
+        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'], 'hello')
+        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'], 765)
+        self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'], 'we are done')
+        self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2a_val2'], 6)
+
     def test_user_dump(self):
-        example1="""
-attribute_2:
-  - attribute_2b:
-      val1: hello
-      val2: let us begin
-  - attribute_2a:
-      d2a_val1: 99.999
-      d2_a_dict:
-        b: 765
-        c: 789
-  - attribute_2b:
-      val1: goodbye
-      val2: we are done
-attribute_1:
-  attribute_1_2: valA
-"""
-
-        with open('example1.yaml','w') as f:
-            f.write(example1)
-
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        ufile=os.path.join('example1.yaml')
-        Y=Yclept(bfile,userfile=ufile)
-        os.remove('example1.yaml')        
+        with open('example1.yaml', 'w') as f:
+            f.write(EXAMPLE1_YAML)
+        Y = Yclept(BFILE, userfile='example1.yaml')
         Y.dump_user('user-dump.yaml')
         self.assertTrue(os.path.exists('user-dump.yaml'))
-        with open('user-dump.yaml','r') as f:
-            user_dump=yaml.safe_load(f)
-        tv=user_dump['attribute_3']['attribute_3_1']['attribute_3_1_1']['attribute_3_1_1_1']['d3111v1']
-        self.assertEqual(tv,'ABC')
+        with open('user-dump.yaml', 'r') as f:
+            user_dump = yaml.safe_load(f)
+        tv = user_dump['attribute_3']['attribute_3_1']['attribute_3_1_1']['attribute_3_1_1_1']['d3111v1']
+        self.assertEqual(tv, 'ABC')
 
     def test_case_insensitive(self):
-        example1="""
-attribute_4: aBc123
-attribute_5: A
-"""
-        with open('example1.yaml','w') as f:
+        example1 = "attribute_4: aBc123\nattribute_5: A\n"
+        with open('example1.yaml', 'w') as f:
             f.write(example1)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        ufile=os.path.join('example1.yaml')
-        Y=Yclept(bfile,userfile=ufile)
-        os.remove('example1.yaml')
+        Y = Yclept(BFILE, userfile='example1.yaml')
         self.assertTrue('attribute_4' in Y["user"])
-        self.assertEqual(Y['user']['attribute_4'],'abc123')
-        self.assertEqual(Y['user']['attribute_5'],'a')
-        
+        self.assertEqual(Y['user']['attribute_4'], 'abc123')
+        self.assertEqual(Y['user']['attribute_5'], 'a')
+
     def test_dotfile1(self):
-        example1="""
-attribute_2:
-  - attribute_2b:
-      val1: hello
-      val2: let us begin
-  - attribute_2a:
-      d2a_val1: 99.999
-      d2_a_dict:
-        b: 765
-        c: 789
-  - attribute_2b:
-      val1: goodbye
-      val2: we are done
-attribute_1:
-  attribute_1_2: valA
-"""
-        dotfile_contents="""
+        dotfile_contents = """
 attributes:
   - name: attribute_1
     type: dict
@@ -184,21 +120,15 @@ attributes:
           - 5
           - 6
 """
-        with open('example1.yaml','w') as f:
-            f.write(example1)
-        with open('rcfile.yaml','w') as f:
+        with open('example1.yaml', 'w') as f:
+            f.write(EXAMPLE1_YAML)
+        with open('rcfile.yaml', 'w') as f:
             f.write(dotfile_contents)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        ufile=os.path.join('example1.yaml')
-        Y=Yclept(bfile,userfile=ufile,rcfile='rcfile.yaml')
-        # Y=Yclept(bfile,userfile=ufile)
-        os.remove('example1.yaml')
-        os.remove('rcfile.yaml')
-        self.assertEqual(Y['user']['attribute_1']['attribute_1_1'],[4,5,6])
+        Y = Yclept(BFILE, userfile='example1.yaml', rcfile='rcfile.yaml')
+        self.assertEqual(Y['user']['attribute_1']['attribute_1_1'], [4, 5, 6])
 
     def test_dotfile2(self):
-        example1="""
+        example1 = """
 attribute_2:
   - attribute_2b:
       val1: hello
@@ -211,7 +141,7 @@ attribute_2:
 attribute_1:
   attribute_1_2: valA
 """
-        dotfile_contents="""
+        dotfile_contents = """
 attributes:
   - name: attribute_2
     type: list
@@ -237,40 +167,34 @@ attributes:
               b: 5678
               c: 9877
 """
-        with open('example1.yaml','w') as f:
+        with open('example1.yaml', 'w') as f:
             f.write(example1)
-        with open('rcfile.yaml','w') as f:
+        with open('rcfile.yaml', 'w') as f:
             f.write(dotfile_contents)
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        ufile=os.path.join('example1.yaml')
-        Y=Yclept(bfile,userfile=ufile,rcfile='rcfile.yaml')
-        # Y=Yclept(bfile,userfile=ufile)
-        os.remove('example1.yaml')
-        os.remove('rcfile.yaml')
-        hits=[]
+        Y = Yclept(BFILE, userfile='example1.yaml', rcfile='rcfile.yaml')
+        hits = []
         for member in Y['user']['attribute_2']:
-            dname=list(member.keys())[0]
-            if dname=='attribute_2a':
+            dname = list(member.keys())[0]
+            if dname == 'attribute_2a':
                 hits.append(Y['user']['attribute_2'].index(member))
         for hit in hits:
-            self.assertEqual(Y['user']['attribute_2'][hit]['attribute_2a']['d2_a_dict'],{'a':1234,'b':5678,'c':9877})
+            self.assertEqual(Y['user']['attribute_2'][hit]['attribute_2a']['d2_a_dict'],
+                             {'a': 1234, 'b': 5678, 'c': 9877})
 
     def test_console_help(self):
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        Y=Yclept(bfile)
-        with open('console-out.txt','w') as f:
-          with redirect_stdout(f):
-              Y.console_help([]);
-        with open('console-out.txt','r') as f:
-          test_str=f.read()
-          self.assertEqual(test_str,'    attribute_1 ->\n    attribute_2 ->\n    attribute_3 ->\n    attribute_4\n    attribute_5\n')
+        Y = Yclept(BFILE)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help([])
+        with open('console-out.txt', 'r') as f:
+            test_str = f.read()
+        self.assertEqual(test_str,
+                         '    attribute_1 ->\n    attribute_2 ->\n    attribute_3 ->\n    attribute_4\n    attribute_5\n')
 
-        with open('console-out.txt','w') as f:
-          with redirect_stdout(f):
-              Y.console_help(['attribute_1']);
-        ref_str="""
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help(['attribute_1'])
+        ref_str = """
 attribute_1:
     This is a description of Attribute 1
 
@@ -278,14 +202,13 @@ base|attribute_1
     attribute_1_1
     attribute_1_2
 """
-        with open('console-out.txt','r') as f:
-          test_str=f.read()
-          self.assertEqual(test_str,ref_str)
+        with open('console-out.txt', 'r') as f:
+            self.assertEqual(f.read(), ref_str)
 
-        with open('console-out.txt','w') as f:
-          with redirect_stdout(f):
-              Y.console_help(['attribute_1','attribute_1_1']);
-        ref_str="""
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help(['attribute_1', 'attribute_1_1'])
+        ref_str = """
 attribute_1_1:
     This is a description of Attribute 1.1
     default: [1, 2, 3]
@@ -296,14 +219,13 @@ base|attribute_1
     attribute_1_1
     attribute_1_2
 """
-        with open('console-out.txt','r') as f:
-          test_str=f.read()
-          self.assertEqual(test_str,ref_str)
+        with open('console-out.txt', 'r') as f:
+            self.assertEqual(f.read(), ref_str)
 
-        with open('console-out.txt','w') as f:
-          with redirect_stdout(f):
-              Y.console_help(['attribute_2']);
-        ref_str="""
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help(['attribute_2'])
+        ref_str = """
 attribute_2:
     Attribute 2 is interpretable as an ordered list of attributes
 
@@ -311,14 +233,13 @@ base|attribute_2
     attribute_2a ->
     attribute_2b ->
 """
-        with open('console-out.txt','r') as f:
-          test_str=f.read()
-          self.assertEqual(test_str,ref_str)
+        with open('console-out.txt', 'r') as f:
+            self.assertEqual(f.read(), ref_str)
 
-        with open('console-out.txt','w') as f:
-          with redirect_stdout(f):
-              Y.console_help(['attribute_2','attribute_2a']);
-        ref_str="""
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help(['attribute_2', 'attribute_2a'])
+        ref_str = """
 attribute_2a:
     Attribute 2a is one possible attribute in a user's list
 
@@ -327,24 +248,21 @@ base|attribute_2->attribute_2a
     d2a_val2
     d2_a_dict
 """
-        with open('console-out.txt','r') as f:
-          test_str=f.read()
-          self.assertEqual(test_str,ref_str)
+        with open('console-out.txt', 'r') as f:
+            self.assertEqual(f.read(), ref_str)
 
     def test_makedoc(self):
-        bdir=os.path.dirname(resources.__file__)
-        bfile=os.path.join(bdir,'example_base.yaml')
-        Y=Yclept(bfile)
+        Y = Yclept(BFILE)
         Y.make_doctree('ydoc')
         self.assertTrue(os.path.exists('ydoc.rst'))
-        ref_str=""".. _ydoc:
+        ref_str = """.. _ydoc:
 
 ``ydoc``
 ========
 
 Top-level attributes
 
-Single-valued parameters:
+Single-valued attributes:
 
   * ``attribute_4``: This is a description of Attribute 4
 
@@ -364,13 +282,154 @@ Subattributes:
 
 ----
 """
-        with open('ydoc.rst','r') as f:
-            test_str=f.read()
-            # remove everything after '----' since it will have a date stamp
-            test_str=test_str.split('----')[0]+'----\n'
-        self.assertEqual(test_str,ref_str)
-
+        with open('ydoc.rst', 'r') as f:
+            test_str = f.read()
+            test_str = test_str.split('----')[0] + '----\n'
+        self.assertEqual(test_str, ref_str)
         self.assertTrue(os.path.isdir('ydoc'))
-        self.assertTrue(os.path.exists(os.path.join('ydoc','attribute_1.rst')))
-        self.assertTrue(os.path.isdir(os.path.join('ydoc','attribute_1')))
-        self.assertTrue(os.path.exists(os.path.join('ydoc','attribute_1','attribute_1_1.rst')))
+        self.assertTrue(os.path.exists(os.path.join('ydoc', 'attribute_1.rst')))
+        self.assertTrue(os.path.isdir(os.path.join('ydoc', 'attribute_1')))
+        self.assertTrue(os.path.exists(os.path.join('ydoc', 'attribute_1', 'attribute_1_1.rst')))
+
+    # ------------------------------------------------------------------
+    # Validation / error-path tests
+    # ------------------------------------------------------------------
+
+    def test_invalid_attribute_name(self):
+        """A key not in the base config causes a SystemExit."""
+        with open('example1.yaml', 'w') as f:
+            f.write("bad_attribute: hello\n")
+        with self.assertRaises(SystemExit):
+            Yclept(BFILE, userfile='example1.yaml')
+
+    def test_choices_valid(self):
+        """attribute_5 accepts a value in its choices list (case-insensitive)."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_5: B\n")
+        Y = Yclept(BFILE, userfile='example1.yaml')
+        self.assertEqual(Y['user']['attribute_5'], 'b')
+
+    def test_choices_invalid(self):
+        """attribute_5 rejects a value not in its choices list."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_5: x\n")
+        with self.assertRaises(SystemExit):
+            Yclept(BFILE, userfile='example1.yaml')
+
+    def test_required_attribute_missing(self):
+        """A required attribute with no default and no user value causes a SystemExit."""
+        base_config = """
+attributes:
+  - name: myattr
+    type: str
+    text: A required string
+    required: True
+"""
+        with open('req_base.yaml', 'w') as f:
+            f.write(base_config)
+        with self.assertRaises(SystemExit):
+            Yclept('req_base.yaml', userdict={})
+
+    def test_wrong_type_for_dict_attribute(self):
+        """Providing a scalar where a dict is expected causes a SystemExit."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_1: not_a_dict\n")
+        with self.assertRaises(SystemExit):
+            Yclept(BFILE, userfile='example1.yaml')
+
+    # ------------------------------------------------------------------
+    # make_default_specs
+    # ------------------------------------------------------------------
+
+    def test_make_default_specs(self):
+        """make_default_specs returns defaults for a top-level dict attribute."""
+        Y = Yclept(BFILE)
+        result = Y.make_default_specs('attribute_1')
+        self.assertIn('attribute_1_1', result)
+        self.assertEqual(result['attribute_1_1'], [1, 2, 3])
+        self.assertIn('attribute_1_2', result)
+        self.assertIsNone(result['attribute_1_2'])
+
+    def test_make_default_specs_nested(self):
+        """make_default_specs can drill into a nested attribute."""
+        Y = Yclept(BFILE)
+        result = Y.make_default_specs('attribute_1', 'attribute_1_1')
+        self.assertIn('attribute_1_1', result)
+        self.assertEqual(result['attribute_1_1'], [1, 2, 3])
+
+    def test_make_default_specs_invalid(self):
+        """make_default_specs raises SystemExit for an unrecognized attribute."""
+        Y = Yclept(BFILE)
+        with self.assertRaises(SystemExit):
+            Y.make_default_specs('not_a_real_attribute')
+
+    # ------------------------------------------------------------------
+    # Utility function tests
+    # ------------------------------------------------------------------
+
+    def test_special_update_list_merge(self):
+        """special_update appends list values without duplicating existing entries."""
+        d1 = {'a': [1, 2]}
+        d2 = {'a': [2, 3]}
+        result = special_update(d1, d2)
+        self.assertEqual(result['a'], [1, 2, 3])
+
+    def test_special_update_dict_merge(self):
+        """special_update merges nested dicts."""
+        d1 = {'b': {'x': 1}}
+        d2 = {'b': {'y': 2}}
+        result = special_update(d1, d2)
+        self.assertEqual(result['b'], {'x': 1, 'y': 2})
+
+    def test_special_update_scalar_overwrite(self):
+        """special_update overwrites scalar values."""
+        d1 = {'c': 'old', 'd': 1}
+        d2 = {'c': 'new', 'e': 'extra'}
+        result = special_update(d1, d2)
+        self.assertEqual(result['c'], 'new')
+        self.assertEqual(result['d'], 1)
+        self.assertEqual(result['e'], 'extra')
+
+    def test_oxford_empty(self):
+        self.assertEqual(oxford([]), '')
+
+    def test_oxford_one(self):
+        self.assertEqual(oxford(['a']), 'a')
+
+    def test_oxford_two(self):
+        self.assertEqual(oxford(['a', 'b']), 'a or b')
+
+    def test_oxford_three_plus(self):
+        self.assertEqual(oxford(['a', 'b', 'c']), 'a, b, or c')
+        self.assertEqual(oxford(['a', 'b', 'c', 'd']), 'a, b, c, or d')
+
+    def test_oxford_conjunction(self):
+        self.assertEqual(oxford(['a', 'b'], conjunction='and'), 'a and b')
+        self.assertEqual(oxford(['a', 'b', 'c'], conjunction='and'), 'a, b, and c')
+
+    def test_generate_footer_all_styles(self):
+        """All documented footer styles produce non-empty strings containing the app name."""
+        for style in ['paragraph', 'comment', 'rubric', 'note', 'raw-html']:
+            result = generate_footer(app_name='testapp', version='9.9', style=style)
+            self.assertIsInstance(result, str)
+            self.assertIn('testapp', result)
+            self.assertIn('9.9', result)
+
+    def test_generate_footer_invalid_style(self):
+        with self.assertRaises(ValueError):
+            generate_footer(style='invalid')
+
+    def test_dict_to_rst_yaml_block(self):
+        data = {'key': 'value', 'num': 42}
+        result = dict_to_rst_yaml_block(data)
+        self.assertTrue(result.startswith('.. code-block:: yaml'))
+        self.assertIn('key', result)
+        self.assertIn('value', result)
+        self.assertIn('42', result)
+
+    def test_dict_to_rst_yaml_block_multiline(self):
+        """Multiline string values are rendered with block scalar style."""
+        data = {'msg': 'line one\nline two'}
+        result = dict_to_rst_yaml_block(data)
+        self.assertIn('.. code-block:: yaml', result)
+        self.assertIn('msg', result)

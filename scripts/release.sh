@@ -59,8 +59,8 @@ fi
 echo "Rotating CHANGELOG.md: [Unreleased] -> [$VERSION] - $TODAY"
 sed -i "s/^## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 
-# Insert a fresh [Unreleased] section (with a blank line) before the new release
-sed -i "s/^## \[$VERSION\] - $TODAY/## [Unreleased]\n\n---\n\n## [$VERSION] - $TODAY/" CHANGELOG.md
+# Insert a fresh [Unreleased] section before the new release
+sed -i "s/^## \[$VERSION\] - $TODAY/## [Unreleased]\n\n## [$VERSION] - $TODAY/" CHANGELOG.md
 
 # ── Version bump ──────────────────────────────────────────────────────────────
 

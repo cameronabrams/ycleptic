@@ -4,10 +4,10 @@ from contextlib import redirect_stdout
 import os
 import yaml
 
-from ycleptic.yclept import Yclept
+from ycleptic.src.yclept import Yclept
 from ycleptic import resources
-from ycleptic.dictthings import special_update
-from ycleptic.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
+from ycleptic.src.dictthings import special_update
+from ycleptic.src.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
 
 BFILE = os.path.join(os.path.dirname(resources.__file__), 'example_base.yaml')
 

@@ -8,7 +8,7 @@ import io
 import logging
 import shutil
 from pathlib import Path
-from . import __version__
+from .. import __version__
 from .stringthings import my_indent, dict_to_rst_yaml_block, generate_footer
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
             fp.write(f'   {topname}/{s["name"]}\n')
         fp.write('\n\n')
 
-    fp.write(generate_footer(app_name=__package__, version=__version__, style=footer_style))
+    fp.write(generate_footer(app_name=__package__.split('.')[0], version=__version__, style=footer_style))
     fp.close()
 
     if len(svp_w_contdef) > 0:
@@ -133,7 +133,7 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
                 if sub_example:
                     f.write('Example:\n' + '+'*len('Example:') + '\n\n')
                     f.write(f'{dict_to_rst_yaml_block(sub_example)}\n\n')
-                f.write(generate_footer(app_name=__package__, version=__version__, style=footer_style))
+                f.write(generate_footer(app_name=__package__.split('.')[0], version=__version__, style=footer_style))
 
     if len(sd) > 0:
         for s in sd:

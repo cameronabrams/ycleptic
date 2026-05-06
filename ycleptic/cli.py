@@ -4,10 +4,10 @@
 Command-line interface for ycleptic
 """
 from __future__ import annotations
-from .yclept import Yclept, __version__
+from .src.yclept import Yclept, __version__
 import argparse as ap
 import textwrap
-from .stringthings import oxford, banner_message
+from .src.stringthings import oxford, banner_message
 
 def makedoc(args):
     """

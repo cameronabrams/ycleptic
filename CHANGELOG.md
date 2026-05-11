@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-05-11
+
 - bugfix: `Yclept` was not re-exported from `ycleptic/__init__.py` after the `src/` restructure in 2.0.4; external packages importing `from ycleptic.yclept import Yclept` (the pre-restructure path) received `ModuleNotFoundError`; `Yclept` is now re-exported from the top-level `__init__.py` so `from ycleptic import Yclept` works as the stable public API
 
 ## [2.0.5] - 2026-05-06

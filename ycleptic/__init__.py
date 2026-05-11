@@ -9,3 +9,7 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
+
+from ycleptic.src.yclept import Yclept
+
+__all__ = ['Yclept']

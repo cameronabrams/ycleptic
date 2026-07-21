@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-21
+
 ### Added
 - `YclepticError` exception type, raised for all invalid user configurations and re-exported from the top-level package (`from ycleptic import YclepticError`) so applications embedding `Yclept` can catch configuration errors instead of having the interpreter terminated
 - Regression tests covering the `config-help --exit-at-end` wiring and `special_update` merge-into-empty-container behavior

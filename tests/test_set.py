@@ -6,6 +6,8 @@ import yaml
 
 from ycleptic.src.yclept import Yclept
 from ycleptic import resources
+from ycleptic import YclepticError
+from ycleptic.cli import config_help
 from ycleptic.src.dictthings import special_update
 from ycleptic.src.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
 
@@ -296,10 +298,10 @@ Subattributes:
     # ------------------------------------------------------------------
 
     def test_invalid_attribute_name(self):
-        """A key not in the base config causes a SystemExit."""
+        """A key not in the base config raises YclepticError."""
         with open('example1.yaml', 'w') as f:
             f.write("bad_attribute: hello\n")
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_choices_valid(self):
@@ -313,11 +315,11 @@ Subattributes:
         """attribute_5 rejects a value not in its choices list."""
         with open('example1.yaml', 'w') as f:
             f.write("attribute_5: x\n")
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_required_attribute_missing(self):
-        """A required attribute with no default and no user value causes a SystemExit."""
+        """A required attribute with no default and no user value raises YclepticError."""
         base_config = """
 attributes:
   - name: myattr
@@ -327,15 +329,24 @@ attributes:
 """
         with open('req_base.yaml', 'w') as f:
             f.write(base_config)
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(YclepticError):
             Yclept('req_base.yaml', userdict={})
 
     def test_wrong_type_for_dict_attribute(self):
-        """Providing a scalar where a dict is expected causes a SystemExit."""
+        """Providing a scalar where a dict is expected raises YclepticError."""
         with open('example1.yaml', 'w') as f:
             f.write("attribute_1: not_a_dict\n")
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
+
+    def test_config_help_exit_at_end(self):
+        """The config-help CLI honors --exit-at-end, exiting when traversal ends."""
+        from argparse import Namespace
+        args = Namespace(config=BFILE, arglist=[], exit_at_end=True, i=False)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                with self.assertRaises(SystemExit):
+                    config_help(args)
 
     # ------------------------------------------------------------------
     # make_default_specs
@@ -358,9 +369,9 @@ attributes:
         self.assertEqual(result['attribute_1_1'], [1, 2, 3])
 
     def test_make_default_specs_invalid(self):
-        """make_default_specs raises SystemExit for an unrecognized attribute."""
+        """make_default_specs raises YclepticError for an unrecognized attribute."""
         Y = Yclept(BFILE)
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(YclepticError):
             Y.make_default_specs('not_a_real_attribute')
 
     # ------------------------------------------------------------------
@@ -389,6 +400,17 @@ attributes:
         self.assertEqual(result['c'], 'new')
         self.assertEqual(result['d'], 1)
         self.assertEqual(result['e'], 'extra')
+
+    def test_special_update_merges_into_empty_existing(self):
+        """An existing empty (falsy) container is merged into, not treated as absent."""
+        d1 = {'items': [], 'opts': {}}
+        d2 = {'items': [1, 2], 'opts': {'x': 1}}
+        result = special_update(d1, d2)
+        # the original empty containers are populated in place
+        self.assertEqual(result['items'], [1, 2])
+        self.assertEqual(result['opts'], {'x': 1})
+        self.assertIs(result['items'], d1['items'])
+        self.assertIs(result['opts'], d1['opts'])
 
     def test_oxford_empty(self):
         self.assertEqual(oxford([]), '')

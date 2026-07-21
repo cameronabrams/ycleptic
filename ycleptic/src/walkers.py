@@ -212,10 +212,10 @@ def lwalk(D: dict, L: list[dict]):
             # because a list attribute indicates an ordered sequence of tasks and we expect each
             # task to be a dictionary specifying the task and not a single scalar value,
             # we will ignore this one
-            logger.debug(f'Warning: Scalar list-element-attribute \'{dx}\' in \'{dx["name"]}\' ignored.')
+            logger.debug(f'Scalar list-element-attribute \'{dx}\' in \'{dx["name"]}\' ignored.')
         elif typ == 'dict':
             if not item[itemname]:
                 item[itemname] = {}
             dwalk(dx, item[itemname])
         else:
-            logger.debug(f'Warning: List-element-attribute \'{itemname}\' in \'{dx["name"]}\' ignored.')
+            logger.debug(f'List-element-attribute \'{itemname}\' in \'{dx["name"]}\' ignored.')

@@ -11,5 +11,6 @@ except PackageNotFoundError:
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from ycleptic.src.yclept import Yclept
+from ycleptic.src.errors import YclepticError
 
-__all__ = ['Yclept']
+__all__ = ['Yclept', 'YclepticError']

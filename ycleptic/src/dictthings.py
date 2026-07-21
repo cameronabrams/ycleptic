@@ -31,17 +31,17 @@ def special_update(dict1: dict, dict2: dict):
         The updated dict1 with values from dict2 merged in.
     """
     for k, v in dict2.items():
-        ov = dict1.get(k, None)
-        if not ov:
+        if k not in dict1:
             dict1[k] = v
+            continue
+        ov = dict1[k]
+        if isinstance(v, list) and isinstance(ov, list):
+            for nv in v:
+                if not nv in ov:
+                    ov.append(nv)
+        elif isinstance(v, dict) and isinstance(ov, dict):
+            ov.update(v)
         else:
-            if isinstance(v, list) and isinstance(ov, list):
-                for nv in v:
-                    if not nv in ov:
-                        ov.append(nv)
-            elif isinstance(v, dict) and isinstance(ov, dict):
-                ov.update(v)
-            else:
-                dict1[k] = v  # overwrite
+            dict1[k] = v  # overwrite
     return dict1
 

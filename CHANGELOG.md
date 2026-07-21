@@ -5,6 +5,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `YclepticError` exception type, raised for all invalid user configurations and re-exported from the top-level package (`from ycleptic import YclepticError`) so applications embedding `Yclept` can catch configuration errors instead of having the interpreter terminated
+- Regression tests covering the `config-help --exit-at-end` wiring and `special_update` merge-into-empty-container behavior
+
+### Changed
+- `raise_clean` now raises `YclepticError` instead of printing to stderr and calling `sys.exit(1)`; the CLI catches it and prints a clean, traceback-free error before exiting, so library callers are no longer killed on an invalid config
+- Dropped the `"Warning: "` prefix from two debug-level log messages in `walkers.lwalk` (they are debug reports, not warnings)
+
+### Fixed
+- `config-help --exit-at-end` was silently ignored: `cli.py` passed the `exit=` keyword but `console_help` reads `exit_at_end`, so the flag never took effect
+- `config_help` had a dead `if/else` that assigned `write_func = print` in both branches, and the `--write-func` help text was copy-pasted from the `arglist` argument
+- `special_update` used a falsy check (`if not ov`) that conflated an absent key with a present-but-falsy value (`[]`, `{}`, `0`); replaced with an explicit `key not in dict` test so existing empty containers are merged into rather than blindly replaced
+
 ## [2.0.6] - 2026-05-11
 
 - bugfix: `Yclept` was not re-exported from `ycleptic/__init__.py` after the `src/` restructure in 2.0.4; external packages importing `from ycleptic.yclept import Yclept` (the pre-restructure path) received `ModuleNotFoundError`; `Yclept` is now re-exported from the top-level `__init__.py` so `from ycleptic import Yclept` works as the stable public API

@@ -4,10 +4,12 @@
 Command-line interface for ycleptic
 """
 from __future__ import annotations
+import sys
 from .src.yclept import Yclept, __version__
 import argparse as ap
 import textwrap
 from .src.stringthings import oxford, banner_message
+from .src.errors import YclepticError
 
 def makedoc(args):
     """
@@ -29,11 +31,9 @@ def config_help(args):
     interactive = args.i
     interactive_prompt = 'help: ' if interactive else ''
     Y = Yclept(config)
-    if args.write_func == 'print':
-        write_func = print
-    else:
-        write_func = print
-    Y.console_help(arglist, write_func=write_func, interactive_prompt=interactive_prompt, exit=exit_at_end)
+    # 'print' is currently the only supported write function
+    write_func = print
+    Y.console_help(arglist, write_func=write_func, interactive_prompt=interactive_prompt, exit_at_end=exit_at_end)
 
 def cli():
     commands = {
@@ -61,13 +61,17 @@ def cli():
                                              help='footer style for the generated documentation; one of "paragraph", "comment", "rubric", "note", or "raw-html"; default %(default)s')
     command_parsers['config-help'].add_argument('config', type=str, default=None, help='input base configuration file in YAML format')
     command_parsers['config-help'].add_argument('arglist', type=str, nargs='*', default=[], help='space-separated attribute tree traversal')
-    command_parsers['config-help'].add_argument('--write-func', type=str, default='print', help='space-separated attribute tree traversal')
+    command_parsers['config-help'].add_argument('--write-func', type=str, default='print', help='name of the function used to emit help text (only "print" is currently supported)')
     command_parsers['config-help'].add_argument('--i', type=bool, default=True, action=ap.BooleanOptionalAction, help='use help interactively')
     command_parsers['config-help'].add_argument('--exit-at-end', type=bool, default=True, action=ap.BooleanOptionalAction, help='exit after help')
 
     args = parser.parse_args()
     if hasattr(args, 'func'):
-        args.func(args)
+        try:
+            args.func(args)
+        except YclepticError as e:
+            print(f'Error: {e}', file=sys.stderr)
+            sys.exit(1)
     else:
         my_list = oxford(list(commands.keys()))
         print(f'No subcommand found. Expected one of {my_list}')

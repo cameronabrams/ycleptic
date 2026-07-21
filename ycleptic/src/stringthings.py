@@ -6,8 +6,8 @@ Various string manipulation functions for ycleptic
 from __future__ import annotations
 import yaml
 from datetime import date
-import sys
 from .. import __version__
+from .errors import YclepticError
 
 banner_message="""
     Ycleptic v. {}
@@ -19,18 +19,20 @@ banner_message="""
 
 def raise_clean(ErrorInstance):
     """
-    Raises an error with a clean message showing no traceback.
+    Raises a :class:`~ycleptic.src.errors.YclepticError` carrying the message of
+    the given exception instance.
+
+    Library code uses this to signal an invalid user configuration.  The
+    original exception's message is preserved, and its traceback is suppressed
+    so callers see a clean error.  The command-line interface catches
+    :class:`YclepticError` and reports it as a traceback-free message.
 
     Parameters
     ----------
     ErrorInstance : Exception
-        The exception instance to raise.
+        The exception whose message describes the configuration problem.
     """
-    try:
-        raise ErrorInstance
-    except ErrorInstance.__class__ as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    raise YclepticError(str(ErrorInstance)) from None
 
 def my_indent(text: str, indent: int = 4) -> str:
     i = ' ' * indent

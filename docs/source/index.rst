@@ -21,5 +21,6 @@ Contents
    installation
    usage
    API <api/API>
+   roadmap
    changelog
 

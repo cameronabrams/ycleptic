@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-21
+
 ### Added
 - Continuous-integration workflow (`.github/workflows/ci.yaml`) that runs the test suite on Python 3.9–3.13 and a lint/type-check job (`ruff check`, `ruff format --check`, `mypy`) on every push to `main` and every pull request
 - `ruff` and `mypy` configuration in `pyproject.toml`, plus a `lint` optional-dependency group (`pip install -e ".[lint]"`)

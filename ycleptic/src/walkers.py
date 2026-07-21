@@ -51,7 +51,7 @@ def make_def(L: list[dict], H: dict, *args):
         try:
             item_idx = [x['name'] for x in L].index(nextarg)
         except ValueError:
-            raise ValueError(f'{nextarg} is not a recognized attribute') from None
+            raise_clean(ValueError(f'{nextarg} is not a recognized attribute'))
         item = L[item_idx]
         make_def(item['attributes'], H, *args)
 
@@ -83,6 +83,27 @@ def mwalk(D1: dict, D2: dict):
                 d1.update(d2)
         else:
             D1['attributes'].append(d2)
+
+
+def _scalar_type_ok(typ: str, value) -> bool:
+    """
+    Return True if ``value`` is acceptable for the declared scalar type ``typ``.
+
+    ``bool`` is treated as distinct from ``int``/``float`` (a YAML boolean is its
+    own kind and must not silently satisfy a numeric attribute), while an ``int``
+    is accepted where a ``float`` is declared (widening). A YAML sequence (list)
+    satisfies ``tuple``, since YAML has no native tuple type. ``str`` is not
+    covered here; string attributes are validated through their ``choices``.
+    """
+    if typ == 'bool':
+        return isinstance(value, bool)
+    if typ == 'int':
+        return isinstance(value, int) and not isinstance(value, bool)
+    if typ == 'float':
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if typ == 'tuple':
+        return isinstance(value, (list, tuple))
+    return True
 
 
 def dwalk(D: dict, I: dict):
@@ -162,6 +183,13 @@ def dwalk(D: dict, I: dict):
                 I[d] = dx.get('default', [])
         # this attribute does appear in I
         else:
+            if typ in ('int', 'float', 'bool', 'tuple') and not _scalar_type_ok(typ, I[d]):
+                raise_clean(
+                    ValueError(
+                        f"Attribute '{d}' of '{dname}' must be of type {typ}; "
+                        f'found value {I[d]!r} of type {type(I[d]).__name__}.'
+                    )
+                )
             if typ == 'str':
                 case_sensitive = dx.get('case_sensitive', True)
                 if not case_sensitive:
@@ -202,7 +230,8 @@ def dwalk(D: dict, I: dict):
                     raise_clean(
                         TypeError(f"Attribute '{d}' of '{dname}' cannot have subattributes.")
                     )
-                I[d] = dx.get('default', ())
+                # honor the user-provided sequence, storing it as a tuple
+                I[d] = tuple(I[d])
 
 
 def lwalk(D: dict, L: list[dict]):

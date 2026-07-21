@@ -35,7 +35,7 @@ class TestYclept(unittest.TestCase):
 
     def tearDown(self):
         for fname in ['example1.yaml', 'user-dump.yaml', 'console-out.txt',
-                      'rcfile.yaml', 'req_base.yaml']:
+                      'rcfile.yaml', 'req_base.yaml', 'type_base.yaml']:
             if os.path.exists(fname):
                 os.remove(fname)
         if os.path.exists('ydoc.rst'):
@@ -347,6 +347,50 @@ attributes:
             with redirect_stdout(f):
                 with self.assertRaises(SystemExit):
                     config_help(args)
+
+    # ------------------------------------------------------------------
+    # Scalar type validation
+    # ------------------------------------------------------------------
+
+    def test_int_attribute_rejects_string(self):
+        """A string value for an int attribute raises YclepticError."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val2: not_an_int\n")
+        with self.assertRaises(YclepticError):
+            Yclept(BFILE, userfile='example1.yaml')
+
+    def test_int_attribute_rejects_bool(self):
+        """A boolean is not accepted where an int is declared."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val2: true\n")
+        with self.assertRaises(YclepticError):
+            Yclept(BFILE, userfile='example1.yaml')
+
+    def test_float_attribute_accepts_int(self):
+        """An int is accepted where a float is declared (widening), and preserved."""
+        with open('example1.yaml', 'w') as f:
+            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val1: 100\n")
+        Y = Yclept(BFILE, userfile='example1.yaml')
+        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2a']['d2a_val1'], 100)
+
+    def test_bool_attribute_validation(self):
+        """A bool attribute accepts booleans and rejects other types."""
+        with open('type_base.yaml', 'w') as f:
+            f.write("attributes:\n  - name: flag\n    type: bool\n    text: a boolean\n    default: false\n")
+        Y = Yclept('type_base.yaml', userdict={'flag': True})
+        self.assertIs(Y['user']['flag'], True)
+        with self.assertRaises(YclepticError):
+            Yclept('type_base.yaml', userdict={'flag': 'yes'})
+
+    def test_tuple_attribute_coerced_and_validated(self):
+        """A tuple attribute accepts a YAML sequence (stored as a tuple) and rejects a scalar."""
+        with open('type_base.yaml', 'w') as f:
+            f.write("attributes:\n  - name: coords\n    type: tuple\n    text: a tuple\n    default: []\n")
+        Y = Yclept('type_base.yaml', userdict={'coords': [1, 2, 3]})
+        self.assertEqual(Y['user']['coords'], (1, 2, 3))
+        self.assertIsInstance(Y['user']['coords'], tuple)
+        with self.assertRaises(YclepticError):
+            Yclept('type_base.yaml', userdict={'coords': 5})
 
     # ------------------------------------------------------------------
     # make_default_specs

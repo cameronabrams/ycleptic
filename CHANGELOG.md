@@ -8,14 +8,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - Continuous-integration workflow (`.github/workflows/ci.yaml`) that runs the test suite on Python 3.9–3.13 and a lint/type-check job (`ruff check`, `ruff format --check`, `mypy`) on every push to `main` and every pull request
 - `ruff` and `mypy` configuration in `pyproject.toml`, plus a `lint` optional-dependency group (`pip install -e ".[lint]"`)
+- Scalar type validation: `int`, `float`, `bool`, and `tuple` attributes now reject wrong-typed user values with a `YclepticError`; `bool` is kept distinct from the numeric types, and an `int` is still accepted where a `float` is declared
 
 ### Changed
 - Applied `ruff format` (single-quote style) across the package
 - `make_doc`'s `docexample` and `generate_footer`'s `app_name` no longer use mutable / `__package__`-derived argument defaults; `Yclept.__init__` and `update_user` type hints now use explicit `dict | None`
-- Documentation roadmap updated: the two Tooling & CI items are now checked off
+- A `tuple` attribute now honors the user-provided YAML sequence, storing it as a tuple, instead of discarding it in favor of the default
+- `make_def` now routes unrecognized-attribute errors through `raise_clean` in both branches, so they raise `YclepticError` consistently
+- Documentation roadmap updated: the Tooling & CI and Correctness & validation items are now checked off
 
 ### Fixed
-- Lint cleanups flagged by ruff: `not x in y` → `x not in y`, `== None` → `is None`, removed an unused import, and the `make_def` re-raise inside `except` now uses `raise ... from None`
+- Lint cleanups flagged by ruff: `not x in y` → `x not in y`, `== None` → `is None`, and removed an unused import
 
 ## [2.1.0] - 2026-07-21
 

@@ -7,19 +7,17 @@ the {doc}`changelog` and check it off here.
 
 ## Correctness & validation
 
-- [ ] **Complete type validation for non-string scalars.** `dwalk`
-  (`ycleptic/src/walkers.py`) only validates `str` values (and only their
-  `choices`). Attributes declared `type: int`, `float`, `bool`, or `tuple`
-  accept user values of the wrong type without complaint, so the datatype
-  guarantee the README advertises is only partially enforced. Add explicit
-  type checks (raising `YclepticError`) for the remaining scalar types.
-  *Effort: medium.*
-- [ ] **Make `make_def` error handling consistent.** In
-  `ycleptic/src/walkers.py`, the single-argument branch of `make_def` reports
-  an unrecognized attribute via `raise_clean` (now `YclepticError`), while the
-  multi-argument branch still does a bare `raise ValueError`. Route both
-  through `raise_clean` so every invalid-config error is the same catchable
-  type. *Effort: trivial (one line).*
+- [x] **Complete type validation for non-string scalars.** `dwalk`
+  (`ycleptic/src/walkers.py`) now type-checks user-provided values for
+  `int`, `float`, `bool`, and `tuple` attributes, raising `YclepticError` on a
+  mismatch. `bool` is kept distinct from the numeric types, an `int` is still
+  accepted where a `float` is declared (widening), and a `tuple` attribute
+  accepts a YAML sequence — now stored as a tuple rather than discarded.
+  *(Shipped.)*
+- [x] **Make `make_def` error handling consistent.** The multi-argument branch
+  of `make_def` now reports an unrecognized attribute via `raise_clean`, the
+  same as the single-argument branch, so every invalid-config error is the
+  same catchable `YclepticError`. *(Shipped.)*
 
 ## Tooling & CI
 

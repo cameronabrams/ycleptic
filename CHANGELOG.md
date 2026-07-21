@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Repositioned the README and documentation landing page to lead with Ycleptic's distinctive workflow — one YAML schema as a single source of truth for validation, generated documentation, and interactive help — with an honest "when to use it" comparison to pydantic, jsonschema, and Hydra
 
+### Fixed
+- `example_base.yaml` used `options:` for two attributes, but only `choices:` is actually validated; those keys are now `choices:` so the shipped example enforces its allowed values as documented
+- Documentation audit: corrected the allowed-values key from `options` to `choices` throughout; documented the previously-undocumented `case_sensitive` key and the `tuple` type; fixed the non-runnable `MyConfig` example snippets (`super().__init__(basefile, userfile=...)` and a missing `import os`); replaced stale "Directive" terminology left from the 2.0.3 rename; added a Quickstart page and a worked `docs:` example; fleshed out the `config-help` page with sample output; and fixed assorted typos
+
 ## [2.2.0] - 2026-07-21
 
 ### Added

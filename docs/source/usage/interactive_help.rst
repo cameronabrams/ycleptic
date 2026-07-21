@@ -3,19 +3,20 @@
 Interactive Help
 ===================
 
-The ``Yclept`` class has a method called ``console_help()`` that is meant to provides interactive help to a package user trying to develop their own config file that conform's to your package's base config.  
+The ``Yclept`` class has a method called ``console_help()`` that is meant to provide interactive help to a package user trying to develop their own config file that conforms to your package's base config.
 
 Suppose this is the content of ``config.py``:
 
 .. code-block:: python
 
+  import os
   from ycleptic.yclept import Yclept
   from mypackage import data
 
   class MyConfig(Yclept):
     def __init__(self, userconfigfile=''):
         basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")
-        super().__init__(data.basefile,userconfigfile=userconfigfile)
+        super().__init__(basefile, userfile=userconfigfile)
    
 
 Here is an example of how the interactive help works:
@@ -36,7 +37,7 @@ This reflects the fact that the three top-level attributes available are called 
 
 .. code-block:: console
 
-    >>> Y.console_help([],interactive_prompt='help: ')
+    >>> c.console_help([],interactive_prompt='help: ')
         attribute_1 ->
         attribute_2 ->
         attribute_3 ->
@@ -45,7 +46,7 @@ This reflects the fact that the three top-level attributes available are called 
     help: attribute_1
 
     attribute_1:
-        This is a description of Directive 1
+        This is a description of Attribute 1
 
     base|attribute_1
         attribute_1_1

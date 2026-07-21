@@ -34,13 +34,14 @@ You then might like to create a "config" class for your package that inherits :c
 
 .. code-block:: python
 
+  import os
   from ycleptic.yclept import Yclept
   from mypackage import data # to get the path to your package data; there are other ways to do this
 
   class MyConfig(Yclept):
     def __init__(self, userconfigfile=''):
         basefile=os.path.join(os.path.dirname(data.__file__),"base.yaml")  # your app's base config
-        super().__init__(data.basefile,userconfigfile=userconfigfile)
+        super().__init__(basefile, userfile=userconfigfile)
 
 
 Here, ``data`` is just a directory where you store your package data (``rootdir/mypackage/data``, in the example), and you can put ``base.yaml`` in that directory as the base configuration description.  Essentially, it is a description of **what** can be configured by a **user's** configuration file when **they** run your app.  Now, inside your app source, if you want to read in the user's configuration file (like if its name was passed in as a command-line argument), you would instantiate a member of the ``MyConfig`` class:

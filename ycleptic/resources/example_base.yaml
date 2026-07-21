@@ -26,7 +26,7 @@ attributes:
       - name: attribute_1_2
         type: str
         text: This is a description of Attribute 1.2
-        options: [ValA, ValB]
+        choices: [valA, valB]
   - name: attribute_2
     type: list
     text: Attribute 2 is interpretable as an ordered list of attributes
@@ -105,7 +105,7 @@ attributes:
                   - name: flipaxis
                     type: str
                     text: Axis around which flip is performed
-                    options: ['x','y','z']
+                    choices: ['x','y','z']
               - name: d322b
                 type: dict
                 text: Subattribute D 3.2.2b saves the result

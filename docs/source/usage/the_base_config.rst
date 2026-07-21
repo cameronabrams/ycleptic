@@ -22,7 +22,7 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
         - name: attribute_1_2
           type: str
           text: This is a description of Attribute 1.2
-          options: [ValA, ValB]
+          choices: [valA, valB]
     - name: attribute_2
       type: list
       text: Attribute 2 is interpretable as an ordered list of attributes
@@ -101,7 +101,7 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
                     - name: flipaxis
                       type: str
                       text: Axis around which flip is performed
-                      options: ['x','y','z']
+                      choices: ['x','y','z']
                 - name: d322b
                   type: dict
                   text: Subattribute D 3.2.2b saves the result
@@ -114,7 +114,7 @@ The heart of ``ycleptic`` is the base configuration file, which the app develope
 
 The base config must open with the single identifier ``attributes``, under which is a list of one or more top-level attributes.  Every attribute must have a declared type, and attributes can be nested.
 
-``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``list``, or ``dict``.  The data content in a attribute is of type ``type`` unless two conditions are met:
+``type`` can be one of ``int``, ``float``, ``str``, ``bool``, ``tuple``, ``list``, or ``dict``.  The data content in an attribute is of type ``type`` unless two conditions are met:
 
 1. ``type`` is either ``list`` or ``dict``; and
 2. the keyword ``attributes`` is present.
@@ -123,9 +123,41 @@ In this case, there are subattributes.  If the ``type`` was ``dict``, then the s
 
 ``text`` is just meant for helpful text describing the attribute, and it can be completely free-form as long as it is on one line or blocked multiline using ``|``.
 
-There are four other keys that a attribute may have:
+There are several other keys an attribute may have:
 
-1. ``default``: as you might expect, this are default values to assign to the attribute if the user "declares" the attribute but does not provide it any values.
-2. ``required``:  a boolean.  If False, that means no defaults are assigned; if a user declares this attribute without providing values, an error occurs, but a user need not declare this attribute at all.  If True, the attribute must be declared (and if it is nested, all the antecedant attributes must also be declared).
-3. ``options``: a list of allowed values; if the user declares this attribute with a value not in this list, an error occurs.
-4. ``docs``: this is a subattribute that can have ``title``, ``text``, and ``example`` keys.  ``title`` and ``text`` are strings used in automatic documentation generation using ``yclept make-doc``.  ``example`` is a YAML-format example of how to use the attribute in a config file.  This is used in the documentation generation as well.
+1. ``default``: the default value (or values) assigned to the attribute when the user declares it but provides no value.
+2. ``required``: a boolean.  If ``True``, the attribute must be declared (and if it is nested, all its antecedent attributes must be declared too).  If ``False``, no defaults are assigned: the user need not declare the attribute at all, but declaring it without providing a value is an error.
+3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  For ``str`` attributes the comparison honors ``case_sensitive`` (below).
+4. ``case_sensitive``: for ``str`` attributes only; a boolean that defaults to ``True``.  When ``False``, the user's value is matched against ``choices`` case-insensitively and stored in casefolded (lower-case) form.
+5. ``docs``: a block that enriches the output of ``yclept make-doc``.  It may contain ``title`` and ``text`` strings and a YAML-format ``example`` showing the attribute in use.  See :ref:`base_config_docs_key` below.
+
+.. _base_config_docs_key:
+
+Enriching generated documentation with ``docs``
+-------------------------------------------------
+
+The ``text`` key gives every attribute a one-line description that appears in
+interactive help and generated documentation.  When you want richer, prose
+documentation for an attribute — the kind you would write into a reference
+manual — add a ``docs`` block.  It is used only by ``yclept make-doc`` and is
+ignored during configuration validation:
+
+.. code-block:: yaml
+
+  - name: integrator
+    type: str
+    text: Integration scheme to use
+    choices: [verlet, langevin]
+    default: verlet
+    docs:
+      title: Integration scheme
+      text: |
+        Selects the time-integration algorithm.  ``verlet`` is symplectic and
+        conserves energy well; ``langevin`` couples the system to a heat bath
+        and is appropriate for constant-temperature runs.
+      example:
+        integrator: langevin
+
+``title`` and ``text`` supply a heading and prose for the attribute's generated
+page, and ``example`` is rendered as a YAML code block showing the attribute in
+use.  See :ref:`usage_yclept_makedoc` for how the tree is generated.

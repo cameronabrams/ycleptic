@@ -328,6 +328,15 @@ Subattributes:
         Y = Yclept(BFILE, userfile='example1.yaml')
         self.assertEqual(Y['user']['attribute_5'], 'b')
 
+    def test_choices_case_sensitive_invalid(self):
+        """A value outside a case-sensitive attribute's choices is rejected."""
+        # attribute_1_2 has choices [valA, valB] and is case-sensitive by default,
+        # so 'ValA' (wrong case) must be rejected.
+        with open('example1.yaml', 'w') as f:
+            f.write('attribute_1:\n  attribute_1_2: ValA\n')
+        with self.assertRaises(YclepticError):
+            Yclept(BFILE, userfile='example1.yaml')
+
     def test_choices_invalid(self):
         """attribute_5 rejects a value not in its choices list."""
         with open('example1.yaml', 'w') as f:

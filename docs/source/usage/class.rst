@@ -54,3 +54,30 @@ This assumes you are using ``argparse`` in the canonical way.  A user might run 
 .. code-block:: console
 
   $ mypackagecli -c user_config.yaml
+
+Handling configuration errors
+-----------------------------
+
+When a user configuration is invalid — an unknown attribute, a missing required
+value, a value outside the allowed ``choices``, or a value of the wrong type —
+:class:`ycleptic.yclept.Yclept` raises :class:`ycleptic.YclepticError`.  The
+command-line interface catches this exception and prints a clean, traceback-free
+message before exiting.  An application that embeds ``Yclept`` can catch it
+directly instead of having the interpreter terminated:
+
+.. code-block:: python
+
+  from ycleptic import Yclept, YclepticError
+
+  try:
+      c = MyConfig(userconfigfile=args.c)
+  except YclepticError as e:
+      print(f'Invalid configuration: {e}')
+      raise SystemExit(1)
+
+``YclepticError`` is re-exported from the top level, so ``from ycleptic import
+YclepticError`` is the stable, supported import path.
+
+.. autoexception:: ycleptic.YclepticError
+   :show-inheritance:
+   :no-index:

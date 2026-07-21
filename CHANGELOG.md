@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Continuous-integration workflow (`.github/workflows/ci.yaml`) that runs the test suite on Python 3.9–3.13 and a lint/type-check job (`ruff check`, `ruff format --check`, `mypy`) on every push to `main` and every pull request
 - `ruff` and `mypy` configuration in `pyproject.toml`, plus a `lint` optional-dependency group (`pip install -e ".[lint]"`)
 - Scalar type validation: `int`, `float`, `bool`, and `tuple` attributes now reject wrong-typed user values with a `YclepticError`; `bool` is kept distinct from the numeric types, and an `int` is still accepted where a `float` is declared
+- Documentation for `YclepticError`: a "Handling configuration errors" section in the usage guide showing the `try/except YclepticError` pattern, plus an `errors` module page in the API reference
 
 ### Changed
 - Applied `ruff format` (single-quote style) across the package
@@ -16,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A `tuple` attribute now honors the user-provided YAML sequence, storing it as a tuple, instead of discarding it in favor of the default
 - `make_def` now routes unrecognized-attribute errors through `raise_clean` in both branches, so they raise `YclepticError` consistently
 - Flattened the package layout: the modules moved from `ycleptic/src/` up to the package root, so internal imports are now `ycleptic.yclept`, `ycleptic.walkers`, etc. The old `ycleptic.src.*` import paths keep working through a deprecation shim (`ycleptic/src/__init__.py`) that re-exports the moved modules and emits a `DeprecationWarning`
-- Documentation roadmap updated: the Tooling & CI, Correctness & validation, and Structure items are now checked off
+- Documentation roadmap updated: all open items (Tooling & CI, Correctness & validation, Structure, and Documentation) are now checked off
 
 ### Fixed
 - Lint cleanups flagged by ruff: `not x in y` → `x not in y`, `== None` → `is None`, and removed an unused import

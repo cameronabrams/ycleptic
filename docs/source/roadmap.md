@@ -44,9 +44,8 @@ the {doc}`changelog` and check it off here.
 
 ## Documentation
 
-- [ ] **Document `YclepticError` as public API.** As of 2.1.0, invalid
-  configurations raise `ycleptic.YclepticError` instead of terminating the
-  interpreter, and the exception is re-exported from the top-level package.
-  Add it to the API reference and show the recommended
-  `try/except YclepticError` pattern for applications embedding `Yclept`.
-  *Effort: low.*
+- [x] **Document `YclepticError` as public API.** Added an "Handling
+  configuration errors" section to `usage/class.rst` showing the recommended
+  `try/except YclepticError` pattern for embedding applications, rendered the
+  exception via `autoexception`, and added an `errors` module page to the API
+  reference. *(Shipped.)*

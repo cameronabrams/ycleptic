@@ -15,7 +15,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `make_doc`'s `docexample` and `generate_footer`'s `app_name` no longer use mutable / `__package__`-derived argument defaults; `Yclept.__init__` and `update_user` type hints now use explicit `dict | None`
 - A `tuple` attribute now honors the user-provided YAML sequence, storing it as a tuple, instead of discarding it in favor of the default
 - `make_def` now routes unrecognized-attribute errors through `raise_clean` in both branches, so they raise `YclepticError` consistently
-- Documentation roadmap updated: the Tooling & CI and Correctness & validation items are now checked off
+- Flattened the package layout: the modules moved from `ycleptic/src/` up to the package root, so internal imports are now `ycleptic.yclept`, `ycleptic.walkers`, etc. The old `ycleptic.src.*` import paths keep working through a deprecation shim (`ycleptic/src/__init__.py`) that re-exports the moved modules and emits a `DeprecationWarning`
+- Documentation roadmap updated: the Tooling & CI, Correctness & validation, and Structure items are now checked off
 
 ### Fixed
 - Lint cleanups flagged by ruff: `not x in y` → `x not in y`, `== None` → `is None`, and removed an unused import

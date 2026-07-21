@@ -6,11 +6,11 @@ Command-line interface for ycleptic
 
 from __future__ import annotations
 import sys
-from .src.yclept import Yclept
+from .yclept import Yclept
 import argparse as ap
 import textwrap
-from .src.stringthings import oxford, banner_message
-from .src.errors import YclepticError
+from .stringthings import oxford, banner_message
+from .errors import YclepticError
 
 
 def makedoc(args):

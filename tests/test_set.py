@@ -4,12 +4,12 @@ from contextlib import redirect_stdout
 import os
 import yaml
 
-from ycleptic.src.yclept import Yclept
+from ycleptic.yclept import Yclept
 from ycleptic import resources
 from ycleptic import YclepticError
 from ycleptic.cli import config_help
-from ycleptic.src.dictthings import special_update
-from ycleptic.src.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
+from ycleptic.dictthings import special_update
+from ycleptic.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
 
 BFILE = os.path.join(os.path.dirname(resources.__file__), 'example_base.yaml')
 
@@ -32,10 +32,15 @@ attribute_1:
 
 
 class TestYclept(unittest.TestCase):
-
     def tearDown(self):
-        for fname in ['example1.yaml', 'user-dump.yaml', 'console-out.txt',
-                      'rcfile.yaml', 'req_base.yaml', 'type_base.yaml']:
+        for fname in [
+            'example1.yaml',
+            'user-dump.yaml',
+            'console-out.txt',
+            'rcfile.yaml',
+            'req_base.yaml',
+            'type_base.yaml',
+        ]:
             if os.path.exists(fname):
                 os.remove(fname)
         if os.path.exists('ydoc.rst'):
@@ -53,7 +58,7 @@ class TestYclept(unittest.TestCase):
         with open('example1.yaml', 'r') as f:
             userdict = yaml.safe_load(f)
         Y = Yclept(BFILE, userdict=userdict)
-        self.assertTrue('attribute_2' in Y["user"])
+        self.assertTrue('attribute_2' in Y['user'])
         self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'], 'hello')
         self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'], 765)
         self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'], 'we are done')
@@ -68,8 +73,14 @@ class TestYclept(unittest.TestCase):
         new_data = {
             'attribute_2': [
                 {'attribute_2b': {'val1': 'new value', 'val2': 'updated value'}},
-                {'attribute_2a': {'d2a_val1': 100, 'd2a_val2': 7, 'd2_a_dict': {'b': 800, 'c': 900}}},
-                {'attribute_2b': {'val1': 'farewell', 'val2': 'the end'}}
+                {
+                    'attribute_2a': {
+                        'd2a_val1': 100,
+                        'd2a_val2': 7,
+                        'd2_a_dict': {'b': 800, 'c': 900},
+                    }
+                },
+                {'attribute_2b': {'val1': 'farewell', 'val2': 'the end'}},
             ]
         }
         Y.update_user(new_data)
@@ -81,7 +92,7 @@ class TestYclept(unittest.TestCase):
         with open('example1.yaml', 'w') as f:
             f.write(EXAMPLE1_YAML)
         Y = Yclept(BFILE, userfile='example1.yaml')
-        self.assertTrue('attribute_2' in Y["user"])
+        self.assertTrue('attribute_2' in Y['user'])
         self.assertEqual(Y['user']['attribute_2'][0]['attribute_2b']['val1'], 'hello')
         self.assertEqual(Y['user']['attribute_2'][1]['attribute_2a']['d2_a_dict']['b'], 765)
         self.assertEqual(Y['user']['attribute_2'][2]['attribute_2b']['val2'], 'we are done')
@@ -95,15 +106,17 @@ class TestYclept(unittest.TestCase):
         self.assertTrue(os.path.exists('user-dump.yaml'))
         with open('user-dump.yaml', 'r') as f:
             user_dump = yaml.safe_load(f)
-        tv = user_dump['attribute_3']['attribute_3_1']['attribute_3_1_1']['attribute_3_1_1_1']['d3111v1']
+        tv = user_dump['attribute_3']['attribute_3_1']['attribute_3_1_1']['attribute_3_1_1_1'][
+            'd3111v1'
+        ]
         self.assertEqual(tv, 'ABC')
 
     def test_case_insensitive(self):
-        example1 = "attribute_4: aBc123\nattribute_5: A\n"
+        example1 = 'attribute_4: aBc123\nattribute_5: A\n'
         with open('example1.yaml', 'w') as f:
             f.write(example1)
         Y = Yclept(BFILE, userfile='example1.yaml')
-        self.assertTrue('attribute_4' in Y["user"])
+        self.assertTrue('attribute_4' in Y['user'])
         self.assertEqual(Y['user']['attribute_4'], 'abc123')
         self.assertEqual(Y['user']['attribute_5'], 'a')
 
@@ -180,8 +193,10 @@ attributes:
             if dname == 'attribute_2a':
                 hits.append(Y['user']['attribute_2'].index(member))
         for hit in hits:
-            self.assertEqual(Y['user']['attribute_2'][hit]['attribute_2a']['d2_a_dict'],
-                             {'a': 1234, 'b': 5678, 'c': 9877})
+            self.assertEqual(
+                Y['user']['attribute_2'][hit]['attribute_2a']['d2_a_dict'],
+                {'a': 1234, 'b': 5678, 'c': 9877},
+            )
 
     def test_console_help(self):
         Y = Yclept(BFILE)
@@ -190,8 +205,10 @@ attributes:
                 Y.console_help([])
         with open('console-out.txt', 'r') as f:
             test_str = f.read()
-        self.assertEqual(test_str,
-                         '    attribute_1 ->\n    attribute_2 ->\n    attribute_3 ->\n    attribute_4\n    attribute_5\n')
+        self.assertEqual(
+            test_str,
+            '    attribute_1 ->\n    attribute_2 ->\n    attribute_3 ->\n    attribute_4\n    attribute_5\n',
+        )
 
         with open('console-out.txt', 'w') as f:
             with redirect_stdout(f):
@@ -300,21 +317,21 @@ Subattributes:
     def test_invalid_attribute_name(self):
         """A key not in the base config raises YclepticError."""
         with open('example1.yaml', 'w') as f:
-            f.write("bad_attribute: hello\n")
+            f.write('bad_attribute: hello\n')
         with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_choices_valid(self):
         """attribute_5 accepts a value in its choices list (case-insensitive)."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_5: B\n")
+            f.write('attribute_5: B\n')
         Y = Yclept(BFILE, userfile='example1.yaml')
         self.assertEqual(Y['user']['attribute_5'], 'b')
 
     def test_choices_invalid(self):
         """attribute_5 rejects a value not in its choices list."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_5: x\n")
+            f.write('attribute_5: x\n')
         with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
@@ -335,13 +352,14 @@ attributes:
     def test_wrong_type_for_dict_attribute(self):
         """Providing a scalar where a dict is expected raises YclepticError."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_1: not_a_dict\n")
+            f.write('attribute_1: not_a_dict\n')
         with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_config_help_exit_at_end(self):
         """The config-help CLI honors --exit-at-end, exiting when traversal ends."""
         from argparse import Namespace
+
         args = Namespace(config=BFILE, arglist=[], exit_at_end=True, i=False)
         with open('console-out.txt', 'w') as f:
             with redirect_stdout(f):
@@ -355,28 +373,30 @@ attributes:
     def test_int_attribute_rejects_string(self):
         """A string value for an int attribute raises YclepticError."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val2: not_an_int\n")
+            f.write('attribute_2:\n  - attribute_2a:\n      d2a_val2: not_an_int\n')
         with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_int_attribute_rejects_bool(self):
         """A boolean is not accepted where an int is declared."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val2: true\n")
+            f.write('attribute_2:\n  - attribute_2a:\n      d2a_val2: true\n')
         with self.assertRaises(YclepticError):
             Yclept(BFILE, userfile='example1.yaml')
 
     def test_float_attribute_accepts_int(self):
         """An int is accepted where a float is declared (widening), and preserved."""
         with open('example1.yaml', 'w') as f:
-            f.write("attribute_2:\n  - attribute_2a:\n      d2a_val1: 100\n")
+            f.write('attribute_2:\n  - attribute_2a:\n      d2a_val1: 100\n')
         Y = Yclept(BFILE, userfile='example1.yaml')
         self.assertEqual(Y['user']['attribute_2'][0]['attribute_2a']['d2a_val1'], 100)
 
     def test_bool_attribute_validation(self):
         """A bool attribute accepts booleans and rejects other types."""
         with open('type_base.yaml', 'w') as f:
-            f.write("attributes:\n  - name: flag\n    type: bool\n    text: a boolean\n    default: false\n")
+            f.write(
+                'attributes:\n  - name: flag\n    type: bool\n    text: a boolean\n    default: false\n'
+            )
         Y = Yclept('type_base.yaml', userdict={'flag': True})
         self.assertIs(Y['user']['flag'], True)
         with self.assertRaises(YclepticError):
@@ -385,7 +405,9 @@ attributes:
     def test_tuple_attribute_coerced_and_validated(self):
         """A tuple attribute accepts a YAML sequence (stored as a tuple) and rejects a scalar."""
         with open('type_base.yaml', 'w') as f:
-            f.write("attributes:\n  - name: coords\n    type: tuple\n    text: a tuple\n    default: []\n")
+            f.write(
+                'attributes:\n  - name: coords\n    type: tuple\n    text: a tuple\n    default: []\n'
+            )
         Y = Yclept('type_base.yaml', userdict={'coords': [1, 2, 3]})
         self.assertEqual(Y['user']['coords'], (1, 2, 3))
         self.assertIsInstance(Y['user']['coords'], tuple)
@@ -499,3 +521,26 @@ attributes:
         result = dict_to_rst_yaml_block(data)
         self.assertIn('.. code-block:: yaml', result)
         self.assertIn('msg', result)
+
+    # ------------------------------------------------------------------
+    # Backward-compatibility shim for the old ycleptic.src layout
+    # ------------------------------------------------------------------
+
+    def test_deprecated_src_shim(self):
+        """The old ``ycleptic.src.*`` paths still resolve, but emit a DeprecationWarning."""
+        import importlib
+        import sys
+        import warnings
+
+        import ycleptic.yclept
+
+        # Force a fresh import of the shim so the warning fires deterministically.
+        for mod in [
+            m for m in list(sys.modules) if m == 'ycleptic.src' or m.startswith('ycleptic.src.')
+        ]:
+            del sys.modules[mod]
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            shim = importlib.import_module('ycleptic.src.yclept')
+        self.assertIs(shim.Yclept, ycleptic.yclept.Yclept)
+        self.assertTrue(any(issubclass(c.category, DeprecationWarning) for c in caught))

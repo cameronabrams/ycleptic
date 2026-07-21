@@ -9,7 +9,7 @@ import io
 import logging
 import shutil
 from pathlib import Path
-from .. import __version__
+from . import __version__
 from .stringthings import my_indent, dict_to_rst_yaml_block, generate_footer
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ from pathlib import Path
 import yaml
 from collections import UserDict
 from argparse import Namespace
-from .. import __version__
+from . import __version__
 from .makedoc import make_doc
 from .walkers import make_def, mwalk, dwalk
 

@@ -7,7 +7,7 @@ Various string manipulation functions for ycleptic
 from __future__ import annotations
 import yaml
 from datetime import date
-from .. import __version__
+from . import __version__
 from .errors import YclepticError
 
 banner_message = """
@@ -21,7 +21,7 @@ banner_message = """
 
 def raise_clean(ErrorInstance):
     """
-    Raises a :class:`~ycleptic.src.errors.YclepticError` carrying the message of
+    Raises a :class:`~ycleptic.errors.YclepticError` carrying the message of
     the given exception instance.
 
     Library code uses this to signal an invalid user configuration.  The

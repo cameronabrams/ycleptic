@@ -8,7 +8,7 @@ the {doc}`changelog` and check it off here.
 ## Correctness & validation
 
 - [x] **Complete type validation for non-string scalars.** `dwalk`
-  (`ycleptic/src/walkers.py`) now type-checks user-provided values for
+  (`ycleptic/walkers.py`) now type-checks user-provided values for
   `int`, `float`, `bool`, and `tuple` attributes, raising `YclepticError` on a
   mismatch. `bool` is kept distinct from the numeric types, an `int` is still
   accepted where a `float` is declared (widening), and a `tuple` attribute
@@ -34,13 +34,13 @@ the {doc}`changelog` and check it off here.
 
 ## Structure & public API
 
-- [ ] **Reconsider the `ycleptic/src/` package layout.** The importable package
-  contains a `src` subpackage, so internal imports read as
-  `ycleptic.src.yclept`. This inverts the usual meaning of a `src`-*layout*
-  (`src/ycleptic/…`) and leaks `src` into import paths. Flattening to
-  `ycleptic/yclept.py` etc. would be cleaner, but it is a breaking change for
-  anyone importing internals, so it needs a deprecation shim and a minor/major
-  version bump. *Effort: medium; coordinate with a version bump.*
+- [x] **Reconsider the `ycleptic/src/` package layout.** The modules were moved
+  up from `ycleptic/src/` to the package root, so internal imports now read as
+  `ycleptic.yclept` etc. rather than `ycleptic.src.yclept`. A deprecation shim
+  (`ycleptic/src/__init__.py`) keeps the old `ycleptic.src.*` paths working —
+  they resolve to the moved modules and emit a `DeprecationWarning`. The
+  import-path change warrants a minor version bump at the next release.
+  *(Shipped.)*
 
 ## Documentation
 

@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Repositioned the README and documentation landing page to lead with Ycleptic's distinctive workflow — one YAML schema as a single source of truth for validation, generated documentation, and interactive help — with an honest "when to use it" comparison to pydantic, jsonschema, and Hydra
+
 ## [2.2.0] - 2026-07-21
 
 ### Added

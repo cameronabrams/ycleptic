@@ -3,10 +3,11 @@
 import logging
 from importlib.metadata import version, PackageNotFoundError
 
+__version__: str
 try:
-    __version__ = version("ycleptic")
+    __version__ = version('ycleptic')
 except PackageNotFoundError:
-    __version__ = "unknown"
+    __version__ = 'unknown'
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 

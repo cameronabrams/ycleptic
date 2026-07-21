@@ -3,6 +3,7 @@
 """
 Exception types raised by ycleptic
 """
+
 from __future__ import annotations
 
 

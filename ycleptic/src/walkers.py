@@ -3,19 +3,21 @@
 """
 Recursive functions that traverse the attribute tree for setting values
 """
+
 from __future__ import annotations
 import logging
-
-logger = logging.getLogger(__name__)
 
 from .dictthings import special_update
 from .stringthings import raise_clean
 
+logger = logging.getLogger(__name__)
+
+
 def make_def(L: list[dict], H: dict, *args):
     """
-    Recursively generates YAML-format default user-config hierarchy with default 
+    Recursively generates YAML-format default user-config hierarchy with default
     attribute values
-    
+
     Parameters
     ----------
     L : list of dict
@@ -28,30 +30,31 @@ def make_def(L: list[dict], H: dict, *args):
     if len(args) == 1:
         name = args[0]
         try:
-            item_idx = [x["name"] for x in L].index(name)
+            item_idx = [x['name'] for x in L].index(name)
         except ValueError:
             raise_clean(ValueError(f'{name} is not a recognized attribute'))
         item = L[item_idx]
-        for d in item.get("attributes", []):
-            if "default" in d:
-                H[d["name"]] = d["default"]
+        for d in item.get('attributes', []):
+            if 'default' in d:
+                H[d['name']] = d['default']
             else:
-                H[d["name"]] = None
-        if not "attributes" in item:
-            if "default" in item:
-                H[item["name"]] = item["default"]
+                H[d['name']] = None
+        if 'attributes' not in item:
+            if 'default' in item:
+                H[item['name']] = item['default']
             else:
-                H[item["name"]] = None
+                H[item['name']] = None
     elif len(args) > 1:
         arglist = list(args)
         nextarg = arglist.pop(0)
         args = tuple(arglist)
         try:
-            item_idx = [x["name"] for x in L].index(nextarg)
+            item_idx = [x['name'] for x in L].index(nextarg)
         except ValueError:
-            raise ValueError(f'{nextarg} is not a recognized attribute')
+            raise ValueError(f'{nextarg} is not a recognized attribute') from None
         item = L[item_idx]
-        make_def(item["attributes"], H, *args)
+        make_def(item['attributes'], H, *args)
+
 
 def mwalk(D1: dict, D2: dict):
     """
@@ -81,11 +84,12 @@ def mwalk(D1: dict, D2: dict):
         else:
             D1['attributes'].append(d2)
 
+
 def dwalk(D: dict, I: dict):
     """
     Recursively process the user's config-dict I by walking recursively through it
     along with the default config-specification dict D
-    
+
     Parameters
     ----------
     D : dict
@@ -93,18 +97,22 @@ def dwalk(D: dict, I: dict):
     I : dict
         The user's config dictionary to be processed.
     """
-    dname = D.get("name", "root")
-    if not 'attributes' in D:
+    dname = D.get('name', 'root')
+    if 'attributes' not in D:
         raise ValueError(f'Attribute {dname} has no attributes; cannot walk through it.')
     # get the name of each config attribute at this level in this block
     tld = [x['name'] for x in D['attributes']]
-    if I == None:
-        raise ValueError(f'Null dictionary found; expected a dict with key(s) {tld} under \'{dname}\'.')
+    if I is None:
+        raise ValueError(
+            f"Null dictionary found; expected a dict with key(s) {tld} under '{dname}'."
+        )
     # The user's config file is a dictionary whose keys must match attribute names in the config
     ud = list(I.keys())
     for u in ud:
-        if not u in tld:
-            raise_clean(ValueError(f'Attribute \'{u}\' invalid; expecting one of {tld} under \'{dname}\'.'))
+        if u not in tld:
+            raise_clean(
+                ValueError(f"Attribute '{u}' invalid; expecting one of {tld} under '{dname}'.")
+            )
     # logger.debug(f'dwalk along {tld} for {I}')
     # for each attribute name
     for d in tld:
@@ -116,11 +124,13 @@ def dwalk(D: dict, I: dict):
         # get its type
         typ = dx['type']
         if typ == 'dict' and (d in I and not isinstance(I[d], dict)):
-            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dname}\' must be a dict; found {type(I[d])}.'))
+            raise_clean(
+                ValueError(f"Attribute '{d}' of '{dname}' must be a dict; found {type(I[d])}.")
+            )
         # logger.debug(f' - {d} typ {typ} I {I[d]}
         # logger.debug(f'- {d} typ {typ} I {I}')
         # if this attribute name does not already have a key in the result
-        if not d in I:
+        if d not in I:
             # logger.debug(f' -> not found {d}')
             # if it is a scalar
             if typ in ['str', 'int', 'float', 'bool', 'tuple']:
@@ -131,7 +141,7 @@ def dwalk(D: dict, I: dict):
                 # if it is flagged as required, die since it is not in the read-in
                 elif 'required' in dx:
                     if dx['required']:
-                        raise_clean(ValueError(f'Attribute \'{d}\' of \'{dname}\' requires a value.'))
+                        raise_clean(ValueError(f"Attribute '{d}' of '{dname}' requires a value."))
             # if it is a dict
             elif typ == 'dict':
                 # if it is explicitly tagged as not required, do nothing
@@ -160,12 +170,20 @@ def dwalk(D: dict, I: dict):
                 if 'choices' in dx:
                     if not case_sensitive:
                         # just check the choices that were provided by the user
-                        if not I[d].casefold() in [x.casefold() for x in dx['choices']]:
-                            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])} (case-insensitive); found \'{I[d]}\''))
+                        if I[d].casefold() not in [x.casefold() for x in dx['choices']]:
+                            raise_clean(
+                                ValueError(
+                                    f"Attribute '{d}' of '{dx['name']}' must be one of {', '.join(dx['choices'])} (case-insensitive); found '{I[d]}'"
+                                )
+                            )
                     else:
                         # check the choices that were provided by the user
-                        if not I[d] in dx['choices']:
-                            raise_clean(ValueError(f'Attribute \'{d}\' of \'{dx["name"]}\' must be one of {", ".join(dx["choices"])}; found \'{I[d]}\''))
+                        if I[d] not in dx['choices']:
+                            raise_clean(
+                                ValueError(
+                                    f"Attribute '{d}' of '{dx['name']}' must be one of {', '.join(dx['choices'])}; found '{I[d]}'"
+                                )
+                            )
             elif typ == 'dict':
                 # process descendants
                 if 'attributes' in dx:
@@ -181,14 +199,17 @@ def dwalk(D: dict, I: dict):
                     I[d] = defaults + I[d]
             elif typ == 'tuple':
                 if 'attributes' in dx:
-                    raise_clean(TypeError(f'Attribute \'{d}\' of \'{dname}\' cannot have subattributes.'))
+                    raise_clean(
+                        TypeError(f"Attribute '{d}' of '{dname}' cannot have subattributes.")
+                    )
                 I[d] = dx.get('default', ())
+
 
 def lwalk(D: dict, L: list[dict]):
     """
     Recursively processes a list of items L by walking recursively through it
     along with the default config-specification dict D
-    
+
     Parameters
     ----------
     D : dict
@@ -203,8 +224,12 @@ def lwalk(D: dict, L: list[dict]):
         # check this item against its attribute
         itemname = list(item.keys())[0]
         # logger.debug(f' - item {item}')
-        if not itemname in tld:
-            raise_clean(ValueError(f'Element \'{itemname}\' of list \'{D["name"]}\' is not valid; expected one of {tld}'))
+        if itemname not in tld:
+            raise_clean(
+                ValueError(
+                    f"Element '{itemname}' of list '{D['name']}' is not valid; expected one of {tld}"
+                )
+            )
         tidx = tld.index(itemname)
         dx = D['attributes'][tidx]
         typ = dx['type']
@@ -212,10 +237,10 @@ def lwalk(D: dict, L: list[dict]):
             # because a list attribute indicates an ordered sequence of tasks and we expect each
             # task to be a dictionary specifying the task and not a single scalar value,
             # we will ignore this one
-            logger.debug(f'Scalar list-element-attribute \'{dx}\' in \'{dx["name"]}\' ignored.')
+            logger.debug(f"Scalar list-element-attribute '{dx}' in '{dx['name']}' ignored.")
         elif typ == 'dict':
             if not item[itemname]:
                 item[itemname] = {}
             dwalk(dx, item[itemname])
         else:
-            logger.debug(f'List-element-attribute \'{itemname}\' in \'{dx["name"]}\' ignored.')
+            logger.debug(f"List-element-attribute '{itemname}' in '{dx['name']}' ignored.")

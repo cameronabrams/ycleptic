@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Continuous-integration workflow (`.github/workflows/ci.yaml`) that runs the test suite on Python 3.9–3.13 and a lint/type-check job (`ruff check`, `ruff format --check`, `mypy`) on every push to `main` and every pull request
+- `ruff` and `mypy` configuration in `pyproject.toml`, plus a `lint` optional-dependency group (`pip install -e ".[lint]"`)
+
+### Changed
+- Applied `ruff format` (single-quote style) across the package
+- `make_doc`'s `docexample` and `generate_footer`'s `app_name` no longer use mutable / `__package__`-derived argument defaults; `Yclept.__init__` and `update_user` type hints now use explicit `dict | None`
+- Documentation roadmap updated: the two Tooling & CI items are now checked off
+
+### Fixed
+- Lint cleanups flagged by ruff: `not x in y` → `x not in y`, `== None` → `is None`, removed an unused import, and the `make_def` re-raise inside `except` now uses `raise ... from None`
+
 ## [2.1.0] - 2026-07-21
 
 ### Added

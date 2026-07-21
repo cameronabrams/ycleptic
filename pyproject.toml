@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest"]
+lint = ["ruff==0.15.22", "mypy"]
 [project.scripts]
 yclept = "ycleptic.cli:cli"
 [project.urls]
@@ -35,3 +36,25 @@ yclept = "ycleptic.cli:cli"
 "Bug Tracker" = "https://github.com/cameronabrams/ycleptic/issues"
 # [tool.pytest.ini_options]
 # log_cli = true
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+# ruff defaults (E4/E7/E9, F) plus flake8-bugbear (B).
+extend-select = ["B"]
+# `I` (capital i) is used deliberately as the "input dict" parameter throughout walkers.py.
+ignore = ["E741"]
+
+[tool.ruff.lint.per-file-ignores]
+# The public re-exports must follow the __version__ assignment, so they cannot sit at the top.
+"ycleptic/__init__.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+# 3.10 is mypy's lowest supported target; the package itself still runs on 3.9.
+python_version = "3.10"
+ignore_missing_imports = true

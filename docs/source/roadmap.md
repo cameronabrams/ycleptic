@@ -23,16 +23,16 @@ the {doc}`changelog` and check it off here.
 
 ## Tooling & CI
 
-- [ ] **Run the test suite in CI on every push/PR.** Today the only workflow
-  (`.github/workflows/release.yaml`) runs `pytest` as part of *publishing*,
-  gated on a version tag — so ordinary pushes and pull requests are not tested
-  automatically. Add a lightweight CI workflow that runs `pytest` across the
-  supported Python versions (3.9–3.13) on push and pull_request. *Effort: low.*
-- [ ] **Add lint and type-check configuration.** No `ruff`/`flake8` or `mypy`
-  config exists. Adopting `ruff` (lint + format) and a light `mypy` pass would
-  catch issues like the mutable default argument `docexample: dict = {}` in
-  `make_doc` (`ycleptic/src/makedoc.py`) and the dead branches already found by
-  hand. Wire them into the CI workflow above. *Effort: low–medium.*
+- [x] **Run the test suite in CI on every push/PR.** Added
+  `.github/workflows/ci.yaml` with a `test` job that runs `pytest` across
+  Python 3.9–3.13 on every push to `main` and every pull request. *(Shipped.)*
+- [x] **Add lint and type-check configuration.** Configured `ruff` (lint with
+  flake8-bugbear, plus single-quote formatting) and a lenient `mypy` pass in
+  `pyproject.toml`, added a `lint` optional-dependency group, and wired a
+  `lint` job (`ruff check`, `ruff format --check`, `mypy`) into
+  `ci.yaml`. Bugbear caught the mutable default `docexample: dict = {}` in
+  `make_doc` and the implicit-`Optional` defaults, which are now fixed.
+  *(Shipped.)*
 
 ## Structure & public API
 

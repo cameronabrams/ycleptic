@@ -2,6 +2,7 @@
 """
 A class for handling specialized YAML-format input files
 """
+
 from __future__ import annotations
 import logging
 import sys
@@ -14,14 +15,15 @@ from .. import __version__
 from .makedoc import make_doc
 from .walkers import make_def, mwalk, dwalk
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
 
 class Yclept(UserDict):
     """
     A class for handling specialized YAML-format input files, including a base config file and an optional user config file.  Inherits from :class:`collections.UserDict`.
 
     This class reads a base config file and an optional user config file to generate an overal instance configuration state. It allows for recursive processing of attributes and subattributes, and provides methods for generating documentation and interactive help.
-    
+
     Parameters
     ----------
     basefile : str
@@ -34,29 +36,31 @@ class Yclept(UserDict):
         The path to a resource config file that extends the base config. Optional.
     """
 
-    def __init__(self, basefile: str, userfile: str = '', userdict: dict = None, rcfile: str = ''):
+    def __init__(
+        self, basefile: str, userfile: str = '', userdict: dict | None = None, rcfile: str = ''
+    ):
         data = {}
         with open(basefile, 'r') as f:
-            data["base"] = yaml.safe_load(f)
+            data['base'] = yaml.safe_load(f)
         if rcfile:
             with open(rcfile, 'r') as f:
                 rc = yaml.safe_load(f)
-                mwalk(data["base"], rc)
+                mwalk(data['base'], rc)
         super().__init__(data)
         if userdict is None:
             userdict = {}
-        self["user"] = {}
+        self['user'] = {}
         if userfile:
             with open(userfile, 'r') as f:
-                self["user"] = yaml.safe_load(f)
+                self['user'] = yaml.safe_load(f)
         elif userdict:
-            self["user"] = userdict
-        dwalk(self["base"], self["user"])
-        self["basefile"] = basefile
-        self["userfile"] = userfile
-        self["rcfile"] = rcfile
+            self['user'] = userdict
+        dwalk(self['base'], self['user'])
+        self['basefile'] = basefile
+        self['userfile'] = userfile
+        self['rcfile'] = rcfile
 
-    def update_user(self, new_data: dict = None):
+    def update_user(self, new_data: dict | None = None):
         """
         Update the user configuration with new data.
 
@@ -67,13 +71,13 @@ class Yclept(UserDict):
         """
         if new_data is None:
             new_data = {}
-        self["user"].update(new_data)
-        dwalk(self["base"], self["user"])
+        self['user'].update(new_data)
+        dwalk(self['base'], self['user'])
 
     def console_help(self, arglist: list[str], end: str = '', **kwargs):
         """
         Interactive help with base config structure
-        
+
         If Y is an initialized instance of Yclept, then
 
         >>> Y.console_help()
@@ -86,7 +90,14 @@ class Yclept(UserDict):
         f = kwargs.get('write_func', print)
         interactive_prompt = kwargs.get('interactive_prompt', '')
         exit_at_end = kwargs.get('exit_at_end', False)
-        self.H = Namespace(base=self['base']['attributes'], write_func=f, arglist=arglist, end=end, interactive_prompt=interactive_prompt, exit=exit_at_end)
+        self.H = Namespace(
+            base=self['base']['attributes'],
+            write_func=f,
+            arglist=arglist,
+            end=end,
+            interactive_prompt=interactive_prompt,
+            exit=exit_at_end,
+        )
         self._help()
 
     def make_doctree(self, topname: str = 'config_ref', footer_style: str = 'paragraph'):
@@ -101,10 +112,17 @@ class Yclept(UserDict):
         rootdir = str(top.parent.resolve())
         doc = self['base'].get('docs', {})
         with open(f'{topname}.rst', 'w') as f:
-            make_doc(self['base']['attributes'], top.name, 'Top-level attributes', f,
-                     docname=doc.get('title', ''), doctext=doc.get('text', ''),
-                     docexample=doc.get('example', {}), rootdir=rootdir,
-                     footer_style=footer_style)
+            make_doc(
+                self['base']['attributes'],
+                top.name,
+                'Top-level attributes',
+                f,
+                docname=doc.get('title', ''),
+                doctext=doc.get('text', ''),
+                docexample=doc.get('example', {}),
+                rootdir=rootdir,
+                footer_style=footer_style,
+            )
 
     def dump_user(self, filename: str = 'complete-user.yaml'):
         """
@@ -136,21 +154,23 @@ class Yclept(UserDict):
         end = H.end
         H.write_func(f'\n{item["name"]}:{end}')
         H.write_func(f'    {textwrap.fill(item["text"], subsequent_indent="      ")}{end}')
-        if item["type"] != "dict":
-            if "default" in item:
+        if item['type'] != 'dict':
+            if 'default' in item:
                 H.write_func(f'    default: {item["default"]}{end}')
-            if "choices" in item:
-                H.write_func(f'    allowed values: {", ".join([str(_) for _ in item["choices"]])}{end}')
-            if item.get("required",False):
+            if 'choices' in item:
+                H.write_func(
+                    f'    allowed values: {", ".join([str(_) for _ in item["choices"]])}{end}'
+                )
+            if item.get('required', False):
                 H.write_func(f'    A value is required.{end}')
         else:
-            if "default" in item:
+            if 'default' in item:
                 H.write_func(f'    default:{end}')
-                for k,v in item["default"].items():
+                for k, v in item['default'].items():
                     H.write_func(f'        {k}: {v}{end}')
 
     def _endhelp(self):
-        self.H.write_func('Thank you for using ycleptic\'s interactive help!')
+        self.H.write_func("Thank you for using ycleptic's interactive help!")
         sys.exit(0)
 
     def _show_path(self):
@@ -167,7 +187,7 @@ class Yclept(UserDict):
 
     def _show_subattributes(self, interactive: bool = False):
         H: Namespace = self.H
-        subds = [x["name"] for x in H.base]
+        subds = [x['name'] for x in H.base]
         hassubs = ['attributes' in x for x in H.base]
         att = [''] * len(subds)
         if interactive:
@@ -189,7 +209,7 @@ class Yclept(UserDict):
             choice = '!'
             if H.interactive_prompt != '':
                 choice = input(H.interactive_prompt)
-        while choice == '' or not choice in [x["name"] for x in H.base] + ['..', '!']:
+        while choice == '' or choice not in [x['name'] for x in H.base] + ['..', '!']:
             if choice != '':
                 H.write_func(f'{choice} not recognized.')
             if len(init_list) > 0:
@@ -218,7 +238,7 @@ class Yclept(UserDict):
                 if len(self.path) > 0:
                     self.path.pop()
             else:
-                downs = [x["name"] for x in H.base]
+                downs = [x['name'] for x in H.base]
                 idx = downs.index(choice)
                 if len(init_keylist) == 0:
                     self._show_item(idx)
@@ -232,7 +252,7 @@ class Yclept(UserDict):
                     # this is a leaf, and we just showed it,
                     # so we can dehistory it but keep the base
                     # since it might have more leaves to select
-                    H.write_func(f'\nAll subattributes at the same level as \'{choice}\':')
+                    H.write_func(f"\nAll subattributes at the same level as '{choice}':")
             if len(init_keylist) == 0:
                 self._show_path()
                 self._show_subattributes(H.interactive_prompt != '')
@@ -242,5 +262,3 @@ class Yclept(UserDict):
         if H.exit:
             self._endhelp()
         return
-    
-

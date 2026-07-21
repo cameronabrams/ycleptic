@@ -3,6 +3,7 @@
 """
 The ``make-doc`` subcommand implementation
 """
+
 from __future__ import annotations
 import io
 import logging
@@ -13,9 +14,18 @@ from .stringthings import my_indent, dict_to_rst_yaml_block, generate_footer
 
 logger = logging.getLogger(__name__)
 
-def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
-             docname: str = '', doctext: str = '', docexample: dict = {},
-             rootdir: str = '', footer_style: str = 'paragraph'):
+
+def make_doc(
+    L: list[dict],
+    topname: str,
+    toptext: str,
+    fp: io.TextIOWrapper,
+    docname: str = '',
+    doctext: str = '',
+    docexample: dict | None = None,
+    rootdir: str = '',
+    footer_style: str = 'paragraph',
+):
     """
     Makes a sphinx/rtd-style doctree from the base config file provided including a root node.
 
@@ -47,12 +57,14 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
     footer_style : str
         Style of the auto-generated footer.  Optional; defaults to ``"paragraph"``.
     """
+    if docexample is None:
+        docexample = {}
     # Derive absolute paths from the open file handle so this function works
     # regardless of the process working directory.
     fp_path = Path(fp.name).resolve()
     rootpath = Path(rootdir).resolve() if rootdir else fp_path.parent
-    rel = fp_path.with_suffix('').relative_to(rootpath)   # e.g. PosixPath('config_ref/attribute_1')
-    outdir = fp_path.parent / fp_path.stem                # where sub-RST files are written
+    rel = fp_path.with_suffix('').relative_to(rootpath)  # e.g. PosixPath('config_ref/attribute_1')
+    outdir = fp_path.parent / fp_path.stem  # where sub-RST files are written
 
     if docname == '':
         docname = f'``{topname}``'
@@ -61,16 +73,16 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
 
     logger.debug(f'"{rel}"')
     fp.write(f'.. _{" ".join(rel.parts)}:\n\n')
-    fp.write(f'{docname}\n{"="*(len(docname))}\n\n')
+    fp.write(f'{docname}\n{"=" * (len(docname))}\n\n')
     if doctext:
         fp.write(f'{doctext}\n\n')
     if docexample:
-        fp.write('Example:\n' + '+'*len('Example:') + '\n\n')
+        fp.write('Example:\n' + '+' * len('Example:') + '\n\n')
         fp.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
 
     svp = [d for d in L if 'attributes' not in d]
     svp_w_contdef = [d for d in svp if isinstance(d.get('default', None), (dict, list))]
-    svp_simple    = [d for d in svp if not isinstance(d.get('default', None), (dict, list))]
+    svp_simple = [d for d in svp if not isinstance(d.get('default', None), (dict, list))]
     sd = [d for d in L if 'attributes' in d]
 
     if any(isinstance(sv.get('default', None), (dict, list)) for sv in svp) or len(sd) > 0:
@@ -107,20 +119,22 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
             fp.write(f'   {topname}/{s["name"]}\n')
         fp.write('\n\n')
 
-    fp.write(generate_footer(app_name=__package__.split('.')[0], version=__version__, style=footer_style))
+    fp.write(
+        generate_footer(app_name=__package__.split('.')[0], version=__version__, style=footer_style)
+    )
     fp.close()
 
     if len(svp_w_contdef) > 0:
         for s in svp_w_contdef:
-            name = s["name"]
-            default = s["default"]
+            name = s['name']
+            default = s['default']
             text = s.get('text', '')
             sub_doctext = s.get('docs', {}).get('text', text)
             sub_example = s.get('docs', {}).get('example', {})
             sub_rel = rel / name
             with open(outdir / f'{name}.rst', 'w') as f:
                 f.write(f'.. _{" ".join(sub_rel.parts)}:\n\n')
-                f.write(f'``{name}``\n{"-"*(4+len(name))}\n\n')
+                f.write(f'``{name}``\n{"-" * (4 + len(name))}\n\n')
                 if isinstance(default, list):
                     for d in default:
                         f.write(f'  * {d}\n')
@@ -131,18 +145,27 @@ def make_doc(L: list[dict], topname: str, toptext: str, fp: io.TextIOWrapper,
                 if sub_doctext:
                     f.write(f'{sub_doctext}\n\n')
                 if sub_example:
-                    f.write('Example:\n' + '+'*len('Example:') + '\n\n')
+                    f.write('Example:\n' + '+' * len('Example:') + '\n\n')
                     f.write(f'{dict_to_rst_yaml_block(sub_example)}\n\n')
-                f.write(generate_footer(app_name=__package__.split('.')[0], version=__version__, style=footer_style))
+                f.write(
+                    generate_footer(
+                        app_name=__package__.split('.')[0], version=__version__, style=footer_style
+                    )
+                )
 
     if len(sd) > 0:
         for s in sd:
-            name = s["name"]
+            name = s['name']
             doc = s.get('docs', {})
             with open(outdir / f'{name}.rst', 'w') as f:
-                make_doc(s['attributes'], name, s['text'], f,
-                         docname=doc.get('title', ''),
-                         doctext=doc.get('text', ''),
-                         docexample=doc.get('example', {}),
-                         rootdir=str(rootpath),
-                         footer_style=footer_style)
+                make_doc(
+                    s['attributes'],
+                    name,
+                    s['text'],
+                    f,
+                    docname=doc.get('title', ''),
+                    doctext=doc.get('text', ''),
+                    docexample=doc.get('example', {}),
+                    rootdir=str(rootpath),
+                    footer_style=footer_style,
+                )

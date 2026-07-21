@@ -1,6 +1,12 @@
 # Ycleptic
 > Self-documenting YAML configuration for Python applications
 
+[![PyPI](https://img.shields.io/pypi/v/ycleptic)](https://pypi.org/project/ycleptic/)
+[![Python versions](https://img.shields.io/pypi/pyversions/ycleptic)](https://pypi.org/project/ycleptic/)
+[![CI](https://github.com/cameronabrams/ycleptic/actions/workflows/ci.yaml/badge.svg)](https://github.com/cameronabrams/ycleptic/actions/workflows/ci.yaml)
+[![Documentation Status](https://readthedocs.org/projects/ycleptic/badge/?version=latest)](https://ycleptic.readthedocs.io/en/latest/?badge=latest)
+[![License: MIT](https://img.shields.io/pypi/l/ycleptic)](https://github.com/cameronabrams/ycleptic/blob/main/LICENSE)
+
 One structured YAML file describes your application's configuration schema. From
 that single source of truth, Ycleptic gives you three things that normally live
 in three separate places:

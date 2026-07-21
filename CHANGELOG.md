@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Status badges (PyPI version, supported Python versions, CI, documentation, license) on the README and the documentation landing page
+
 ## [2.2.1] - 2026-07-21
 
 ### Changed

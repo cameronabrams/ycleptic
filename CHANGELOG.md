@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - Status badges (PyPI version, supported Python versions, CI, documentation, license) on the README and the documentation landing page
 
+### Fixed
+- Interactive `config-help` no longer ends with an uncaught traceback when stdin reaches EOF (piped or redirected input) or when the user presses Ctrl-C; either case now quits the session cleanly, exactly as if the user had typed `!`
+
 ## [2.2.1] - 2026-07-21
 
 ### Changed

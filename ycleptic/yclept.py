@@ -201,23 +201,32 @@ class Yclept(UserDict):
                 c = ''
             H.write_func(f'    {m}{c}{a}')
 
+    def _prompt_choice(self):
+        H: Namespace = self.H
+        choice = '!'
+        if H.interactive_prompt != '':
+            try:
+                choice = input(H.interactive_prompt)
+            except (EOFError, KeyboardInterrupt):
+                # no more input, or the user interrupted; quit as though
+                # the user had typed '!'
+                H.write_func('')
+                choice = '!'
+        return choice
+
     def _get_help_choice(self, init_list: list[str]):
         H: Namespace = self.H
         if len(init_list) > 0:
             choice = init_list.pop()
         else:
-            choice = '!'
-            if H.interactive_prompt != '':
-                choice = input(H.interactive_prompt)
+            choice = self._prompt_choice()
         while choice == '' or choice not in [x['name'] for x in H.base] + ['..', '!']:
             if choice != '':
                 H.write_func(f'{choice} not recognized.')
             if len(init_list) > 0:
                 choice = init_list.pop()
             else:
-                choice = '!'
-                if H.interactive_prompt != '':
-                    choice = input(H.interactive_prompt)
+                choice = self._prompt_choice()
         return choice
 
     def _help(self):

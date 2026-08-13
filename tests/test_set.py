@@ -270,6 +270,42 @@ base|attribute_2->attribute_2a
         with open('console-out.txt', 'r') as f:
             self.assertEqual(f.read(), ref_str)
 
+    def test_console_help_eof_quits_cleanly(self):
+        """EOF on stdin ends an interactive help session as if the user typed '!'."""
+        from unittest.mock import patch
+
+        Y = Yclept(BFILE)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                with patch('builtins.input', side_effect=EOFError):
+                    Y.console_help([], interactive_prompt='help: ')
+        with open('console-out.txt', 'r') as f:
+            self.assertIn('! quit', f.read())
+
+    def test_console_help_eof_after_bad_choice_quits_cleanly(self):
+        """EOF also ends the session from the re-prompt after an unrecognized choice."""
+        from unittest.mock import patch
+
+        Y = Yclept(BFILE)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                with patch('builtins.input', side_effect=['bogus', EOFError]):
+                    Y.console_help([], interactive_prompt='help: ')
+        with open('console-out.txt', 'r') as f:
+            self.assertIn('bogus not recognized.', f.read())
+
+    def test_console_help_keyboard_interrupt_quits_cleanly(self):
+        """Ctrl-C at the prompt ends the session cleanly rather than raising."""
+        from unittest.mock import patch
+
+        Y = Yclept(BFILE)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                with patch('builtins.input', side_effect=KeyboardInterrupt):
+                    Y.console_help([], interactive_prompt='help: ')
+        with open('console-out.txt', 'r') as f:
+            self.assertIn('! quit', f.read())
+
     def test_makedoc(self):
         Y = Yclept(BFILE)
         Y.make_doctree('ydoc')

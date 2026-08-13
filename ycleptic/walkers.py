@@ -106,6 +106,19 @@ def _scalar_type_ok(typ: str, value) -> bool:
     return True
 
 
+def _declared_type(dx: dict, dname: str) -> str:
+    """
+    Return the declared type of attribute spec ``dx``, or report its absence.
+
+    Every attribute must declare a type; without one there is nothing to
+    validate the user's value against.
+    """
+    typ = dx.get('type')
+    if typ is None:
+        raise_clean(ValueError(f"Attribute '{dx.get('name', '?')}' of '{dname}' declares no type."))
+    return typ
+
+
 def dwalk(D: dict, I: dict):
     """
     Recursively process the user's config-dict I by walking recursively through it
@@ -143,7 +156,7 @@ def dwalk(D: dict, I: dict):
         dx = D['attributes'][tidx]
         # logger.debug(f' d {d}')
         # get its type
-        typ = dx['type']
+        typ = _declared_type(dx, dname)
         if typ == 'dict' and (d in I and not isinstance(I[d], dict)):
             raise_clean(
                 ValueError(f"Attribute '{d}' of '{dname}' must be a dict; found {type(I[d])}.")
@@ -261,7 +274,7 @@ def lwalk(D: dict, L: list[dict]):
             )
         tidx = tld.index(itemname)
         dx = D['attributes'][tidx]
-        typ = dx['type']
+        typ = _declared_type(dx, D['name'])
         if typ in ['str', 'int', 'float']:
             # because a list attribute indicates an ordered sequence of tasks and we expect each
             # task to be a dictionary specifying the task and not a single scalar value,

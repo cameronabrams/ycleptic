@@ -5,6 +5,8 @@ Various string manipulation functions for ycleptic
 """
 
 from __future__ import annotations
+
+from typing import NoReturn
 import yaml
 from datetime import date
 from . import __version__
@@ -19,7 +21,7 @@ banner_message = """
     """.format(__version__)
 
 
-def raise_clean(ErrorInstance):
+def raise_clean(ErrorInstance) -> NoReturn:
     """
     Raises a :class:`~ycleptic.errors.YclepticError` carrying the message of
     the given exception instance.

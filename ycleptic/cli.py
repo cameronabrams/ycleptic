@@ -6,9 +6,11 @@ Command-line interface for ycleptic
 
 from __future__ import annotations
 import sys
+import yaml
 from .yclept import Yclept
 import argparse as ap
 import textwrap
+from .speccheck import check_base_spec, format_problems
 from .stringthings import oxford, banner_message
 from .errors import YclepticError
 
@@ -44,18 +46,35 @@ def config_help(args):
     )
 
 
+def check_spec(args):
+    """
+    Reports any declarations in a base config file that ycleptic ignores.
+    """
+    with open(args.config, 'r') as f:
+        base = yaml.safe_load(f)
+    problems = check_base_spec(base)
+    if not problems:
+        print(f'{args.config}: no unrecognized keys or types')
+        return
+    print(format_problems(problems, args.config), file=sys.stderr)
+    sys.exit(1)
+
+
 def cli():
     commands = {
         'make-doc': makedoc,
         'config-help': config_help,
+        'check-spec': check_spec,
     }
     helps = {
         'make-doc': 'Makes a sphinx/rtd-style doctree from the base config file provided and, optionally, a root node',
         'config-help': 'Help on a base config file',
+        'check-spec': 'Reports declarations in a base config file that ycleptic ignores',
     }
     descs = {
         'make-doc': 'If you provide the name of a base configuration file for your app, and optionally, a root attribute, this command will generate a sphinx/rtd-style doctree',
         'config-help': 'If you provide the name of a base configuration file for your app, you can use this command to explore it the way a user would in your app',
+        'check-spec': 'Reads a base configuration file and reports every key or type name ycleptic does not recognize, each of which is silently ignored when configs are validated.  Exits nonzero if any are found, so it can gate a CI run',
     }
     parser = ap.ArgumentParser(
         description=textwrap.dedent(banner_message), formatter_class=ap.RawDescriptionHelpFormatter
@@ -83,6 +102,9 @@ def cli():
         default='paragraph',
         choices=['paragraph', 'comment', 'rubric', 'note', 'raw-html'],
         help='footer style for the generated documentation; one of "paragraph", "comment", "rubric", "note", or "raw-html"; default %(default)s',
+    )
+    command_parsers['check-spec'].add_argument(
+        'config', type=str, default=None, help='input base configuration file in YAML format'
     )
     command_parsers['config-help'].add_argument(
         'config', type=str, default=None, help='input base configuration file in YAML format'

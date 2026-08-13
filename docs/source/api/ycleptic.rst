@@ -24,6 +24,7 @@ Submodules
    ycleptic.dictthings
    ycleptic.errors
    ycleptic.makedoc
+   ycleptic.speccheck
    ycleptic.stringthings
    ycleptic.walkers
    ycleptic.yclept

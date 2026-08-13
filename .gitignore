@@ -85,6 +85,7 @@ tests/test_set/console-out.txt
 tests/test_set/ydoc.rst
 tests/test_set/ydoc/
 tests/test_set/rcfile.yaml
+tests/test_set/spec-check-base.yaml
 
 # PyBuilder
 target/

@@ -1,17 +1,55 @@
 import shutil
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 import os
 import yaml
 
 from ycleptic.yclept import Yclept
 from ycleptic import resources
-from ycleptic import YclepticError
-from ycleptic.cli import config_help
+from ycleptic import YclepticError, YclepticSpecWarning
+from ycleptic.speccheck import check_base_spec
+from ycleptic.cli import config_help, check_spec
 from ycleptic.dictthings import special_update
 from ycleptic.stringthings import oxford, generate_footer, dict_to_rst_yaml_block
 
 BFILE = os.path.join(os.path.dirname(resources.__file__), 'example_base.yaml')
+
+# A base spec exercising every silent-typo trap the spec checker looks for.
+BAD_SPEC_YAML = """
+attributes:
+  - name: a_opts
+    type: str
+    text: uses options instead of choices
+    options: [red, green]
+    default: red
+  - name: a_string
+    type: string
+    text: uses type string instead of str
+    choices: [red, green]
+    default: red
+  - name: an_int
+    type: int
+    text: choices on a non-str attribute
+    choices: [1, 2, 3]
+    default: 1
+  - name: nested
+    type: dict
+    text: a nested block
+    attributes:
+      - name: deep
+        type: str
+        text: a misspelled key one level down
+        chioces: [red, green]
+        docs:
+          titel: a misspelled docs key
+  - name: untyped
+    text: no type declared at all
+"""
+
+# The one trap above that stops a load outright, so tests can drop it.
+UNTYPED_ATTRIBUTE = """  - name: untyped
+    text: no type declared at all
+"""
 
 EXAMPLE1_YAML = """
 attribute_2:
@@ -306,6 +344,112 @@ base|attribute_2->attribute_2a
         with open('console-out.txt', 'r') as f:
             self.assertIn('! quit', f.read())
 
+    # ------------------------------------------------------------------
+    # Base-spec validation
+    # ------------------------------------------------------------------
+
+    def test_shipped_example_base_spec_is_clean(self):
+        """The shipped example must not trip its own spec checker."""
+        with open(BFILE, 'r') as f:
+            base = yaml.safe_load(f)
+        self.assertEqual(check_base_spec(base), [])
+
+    def test_spec_check_flags_options_instead_of_choices(self):
+        """'options' is read by nothing, so a schema using it is unvalidated."""
+        base = yaml.safe_load(BAD_SPEC_YAML)
+        problems = check_base_spec(base)
+        opt = [p for p in problems if "unrecognized key 'options'" in p]
+        self.assertEqual(len(opt), 1)
+        self.assertIn("attribute 'a_opts'", opt[0])
+        self.assertIn("did you mean 'choices'?", opt[0])
+
+    def test_spec_check_flags_string_instead_of_str(self):
+        """'string' matches no branch, so the attribute gets no string handling."""
+        base = yaml.safe_load(BAD_SPEC_YAML)
+        problems = check_base_spec(base)
+        typ = [p for p in problems if "unrecognized type 'string'" in p]
+        self.assertEqual(len(typ), 1)
+        self.assertIn("attribute 'a_string'", typ[0])
+        self.assertIn("did you mean 'str'?", typ[0])
+
+    def test_spec_check_flags_choices_on_non_str(self):
+        """'choices' is enforced only on str attributes; elsewhere it is inert."""
+        base = yaml.safe_load(BAD_SPEC_YAML)
+        problems = check_base_spec(base)
+        ch = [p for p in problems if "'choices' is only enforced" in p]
+        self.assertEqual(len(ch), 1)
+        self.assertIn("attribute 'an_int'", ch[0])
+
+    def test_spec_check_reports_nested_path_and_docs_keys(self):
+        """Problems name the full attribute path, including inside a docs block."""
+        base = yaml.safe_load(BAD_SPEC_YAML)
+        problems = check_base_spec(base)
+        self.assertTrue(
+            any("attribute 'nested->deep': unrecognized key 'chioces'" in p for p in problems)
+        )
+        self.assertTrue(any("'titel' in its 'docs' block" in p for p in problems))
+
+    def test_spec_check_flags_missing_type(self):
+        base = yaml.safe_load(BAD_SPEC_YAML)
+        problems = check_base_spec(base)
+        self.assertTrue(any("attribute 'untyped': no 'type' declared" in p for p in problems))
+
+    def test_bad_spec_warns_by_default(self):
+        """A questionable spec still loads, but says so."""
+        specfile = 'spec-check-base.yaml'
+        with open(specfile, 'w') as f:
+            f.write(BAD_SPEC_YAML.replace(UNTYPED_ATTRIBUTE, ''))
+        with self.assertWarns(YclepticSpecWarning) as cm:
+            Y = Yclept(specfile, userdict={'a_opts': 'red'})
+        self.assertIn('does not act on', str(cm.warning))
+        self.assertEqual(Y['user']['a_opts'], 'red')
+
+    def test_attribute_with_no_type_reports_cleanly(self):
+        """A spec attribute with no declared type is an error, not a KeyError."""
+        specfile = 'spec-check-base.yaml'
+        with open(specfile, 'w') as f:
+            f.write(BAD_SPEC_YAML)
+        with self.assertWarns(YclepticSpecWarning):
+            with self.assertRaises(YclepticError) as cm:
+                Yclept(specfile, userdict={})
+        self.assertIn('declares no type', str(cm.exception))
+
+    def test_bad_spec_raises_under_strict_spec(self):
+        specfile = 'spec-check-base.yaml'
+        with open(specfile, 'w') as f:
+            f.write(BAD_SPEC_YAML)
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(specfile, userdict={}, strict_spec=True)
+        self.assertIn("unrecognized key 'options'", str(cm.exception))
+
+    def test_good_spec_neither_warns_nor_raises(self):
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', YclepticSpecWarning)
+            Yclept(BFILE, strict_spec=True)
+
+    def test_check_spec_cli_reports_and_exits_nonzero(self):
+        """The check-spec subcommand gates CI on a clean base spec."""
+        from argparse import Namespace
+
+        specfile = 'spec-check-base.yaml'
+        with open(specfile, 'w') as f:
+            f.write(BAD_SPEC_YAML)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stderr(f):
+                with self.assertRaises(SystemExit) as cm:
+                    check_spec(Namespace(config=specfile))
+        self.assertEqual(cm.exception.code, 1)
+        with open('console-out.txt', 'r') as f:
+            self.assertIn("unrecognized key 'options'", f.read())
+
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                check_spec(Namespace(config=BFILE))
+        with open('console-out.txt', 'r') as f:
+            self.assertIn('no unrecognized keys or types', f.read())
+
     def test_makedoc(self):
         Y = Yclept(BFILE)
         Y.make_doctree('ydoc')
@@ -322,6 +466,8 @@ Single-valued attributes:
   * ``attribute_4``: This is a description of Attribute 4
 
   * ``attribute_5``: This is a description of Attribute 5
+
+    Allowed values: ``a``, ``b``, ``c``
 
 
 

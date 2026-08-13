@@ -17,3 +17,16 @@ class YclepticError(Exception):
     catches :class:`YclepticError` and reports it as a clean, traceback-free
     error message.
     """
+
+
+class YclepticSpecWarning(UserWarning):
+    """
+    Issued when a base config specification contains a declaration ycleptic
+    ignores, such as a misspelled key or an unrecognized type name.
+
+    Such a declaration does nothing, so an attribute its author believes is
+    constrained may in fact accept any value.  This is a warning rather than an
+    error so that existing specifications keep loading; construct
+    :class:`~ycleptic.yclept.Yclept` with ``strict_spec=True`` to raise
+    :class:`YclepticError` instead.
+    """

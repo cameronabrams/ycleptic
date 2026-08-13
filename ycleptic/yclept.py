@@ -7,12 +7,16 @@ from __future__ import annotations
 import logging
 import sys
 import textwrap
+import warnings
 from pathlib import Path
 import yaml
 from collections import UserDict
 from argparse import Namespace
 from . import __version__
+from .errors import YclepticSpecWarning
 from .makedoc import make_doc
+from .speccheck import check_base_spec, format_problems
+from .stringthings import raise_clean
 from .walkers import make_def, mwalk, dwalk
 
 logger = logging.getLogger(__name__)
@@ -34,10 +38,20 @@ class Yclept(UserDict):
         A dictionary of user-defined configurations. Optional; used instead of ``userfile`` when provided.
     rcfile : str
         The path to a resource config file that extends the base config. Optional.
+    strict_spec : bool
+        If True, a base config containing declarations ycleptic ignores --- a
+        misspelled key or an unrecognized type name --- raises
+        :class:`~ycleptic.errors.YclepticError` instead of issuing a
+        :class:`~ycleptic.errors.YclepticSpecWarning`.  Optional; defaults to False.
     """
 
     def __init__(
-        self, basefile: str, userfile: str = '', userdict: dict | None = None, rcfile: str = ''
+        self,
+        basefile: str,
+        userfile: str = '',
+        userdict: dict | None = None,
+        rcfile: str = '',
+        strict_spec: bool = False,
     ):
         data = {}
         with open(basefile, 'r') as f:
@@ -46,6 +60,12 @@ class Yclept(UserDict):
             with open(rcfile, 'r') as f:
                 rc = yaml.safe_load(f)
                 mwalk(data['base'], rc)
+        problems = check_base_spec(data['base'])
+        if problems:
+            report = format_problems(problems, basefile)
+            if strict_spec:
+                raise_clean(ValueError(report))
+            warnings.warn(report, YclepticSpecWarning, stacklevel=2)
         super().__init__(data)
         if userdict is None:
             userdict = {}

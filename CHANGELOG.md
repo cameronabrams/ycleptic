@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Base config specifications are now checked when they are loaded, and any declaration ycleptic ignores is reported: a key outside the recognized set (`options:` where `choices:` was meant), an unrecognized `type:` name (`string` instead of `str`), an attribute with no declared type, and `choices` on a non-`str` attribute, which is not enforced. Such a declaration silently does nothing, so an attribute its author believes is constrained may in fact accept any value. Findings are issued as a `YclepticSpecWarning` and the config still loads; `Yclept(..., strict_spec=True)` raises `YclepticError` instead
+- `yclept check-spec <base.yaml>` reports the same findings from the command line and exits nonzero when any are found, so it can gate a CI run
+- `ycleptic.speccheck.check_base_spec`, which returns the findings as a list of strings
+
+### Fixed
+- `yclept make-doc` now renders an attribute's `choices` as "Allowed values" in the generated documentation. Interactive help has always shown them, so generated docs and interactive help disagreed about what the schema allowed
+- An attribute with no declared `type` now reports a clean error naming the attribute, instead of raising `KeyError: 'type'`
+
 ## [2.2.2] - 2026-08-13
 
 ### Added

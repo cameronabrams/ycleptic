@@ -97,6 +97,9 @@ def make_doc(
             default = sv.get('default', None)
             default_text = f' (default: {default})' if default is not None else ''
             fp.write(f'  * ``{sv["name"]}``: {sv["text"]}{default_text}\n\n')
+            if 'choices' in sv:
+                allowed = ', '.join(f'``{c}``' for c in sv['choices'])
+                fp.write(f'    Allowed values: {allowed}\n\n')
             sv_example = sv.get('docs', {}).get('example', {})
             if sv_example:
                 fp.write('    Example:\n\n')

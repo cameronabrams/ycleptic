@@ -127,9 +127,23 @@ There are several other keys an attribute may have:
 
 1. ``default``: the default value (or values) assigned to the attribute when the user declares it but provides no value.
 2. ``required``: a boolean.  If ``True``, the attribute must be declared (and if it is nested, all its antecedent attributes must be declared too).  If ``False``, no defaults are assigned: the user need not declare the attribute at all, but declaring it without providing a value is an error.
-3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  For ``str`` attributes the comparison honors ``case_sensitive`` (below).
+3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  This is currently enforced for ``str`` attributes only, and the comparison honors ``case_sensitive`` (below); on an attribute of any other type the list has no effect.  The allowed values appear in interactive help and in the output of ``yclept make-doc``.
 4. ``case_sensitive``: for ``str`` attributes only; a boolean that defaults to ``True``.  When ``False``, the user's value is matched against ``choices`` case-insensitively and stored in casefolded (lower-case) form.
 5. ``docs``: a block that enriches the output of ``yclept make-doc``.  It may contain ``title`` and ``text`` strings and a YAML-format ``example`` showing the attribute in use.  See :ref:`base_config_docs_key` below.
+
+.. warning::
+
+   A base config is data, and ycleptic reads only the keys listed above.  Any
+   other key is discarded without comment, so a misspelling leaves you with a
+   declaration that does nothing --- writing ``options:`` instead of
+   ``choices:`` yields an attribute that looks constrained but accepts any
+   value.  The same is true of the type names: ``type: string`` is not
+   ``type: str``, and an attribute with an unrecognized type is left entirely
+   unvalidated, its ``choices`` unenforced and its ``default`` never applied.
+
+   Constructing a :class:`~ycleptic.yclept.Yclept` reports these as a
+   :class:`~ycleptic.errors.YclepticSpecWarning`, and ``yclept check-spec``
+   reports them from the command line.  See :ref:`usage_yclept_check_spec`.
 
 .. _base_config_docs_key:
 

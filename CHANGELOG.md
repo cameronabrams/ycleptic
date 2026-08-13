@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-13
+
 ### Added
 - Base config specifications are now checked when they are loaded, and any declaration ycleptic ignores is reported: a key outside the recognized set (`options:` where `choices:` was meant), an unrecognized `type:` name (`string` instead of `str`), an attribute with no declared type, and `choices` on a non-`str` attribute, which is not enforced. Such a declaration silently does nothing, so an attribute its author believes is constrained may in fact accept any value. Findings are issued as a `YclepticSpecWarning` and the config still loads; `Yclept(..., strict_spec=True)` raises `YclepticError` instead
 - `yclept check-spec <base.yaml>` reports the same findings from the command line and exits nonzero when any are found, so it can gate a CI run

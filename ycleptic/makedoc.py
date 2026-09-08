@@ -11,6 +11,7 @@ import shutil
 from pathlib import Path
 from . import __version__
 from .stringthings import my_indent, dict_to_rst_yaml_block, generate_footer
+from .walkers import subattributes
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +81,13 @@ def make_doc(
         fp.write('Example:\n' + '+' * len('Example:') + '\n\n')
         fp.write(f'{dict_to_rst_yaml_block(docexample)}\n\n')
 
-    svp = [d for d in L if 'attributes' not in d]
+    # A free-key node carries its child schema in 'value_attributes' rather than
+    # 'attributes'; it is a branch and must be documented as one, or the values
+    # users actually write would go undocumented.
+    svp = [d for d in L if subattributes(d) is None]
     svp_w_contdef = [d for d in svp if isinstance(d.get('default', None), (dict, list))]
     svp_simple = [d for d in svp if not isinstance(d.get('default', None), (dict, list))]
-    sd = [d for d in L if 'attributes' in d]
+    sd = [d for d in L if subattributes(d) is not None]
 
     if any(isinstance(sv.get('default', None), (dict, list)) for sv in svp) or len(sd) > 0:
         if outdir.exists():
@@ -145,6 +149,14 @@ def make_doc(
                     for k, v in default.items():
                         f.write(f'  * ``{k}``: {v}\n')
                 f.write('\n\n')
+                if isinstance(default, list) and default:
+                    if s.get('list_defaults', 'append') == 'replace':
+                        f.write('A list you supply **replaces** these defaults entirely.\n\n')
+                    else:
+                        f.write(
+                            'These defaults are **kept**, and a list you supply is added '
+                            'after them.\n\n'
+                        )
                 if sub_doctext:
                     f.write(f'{sub_doctext}\n\n')
                 if sub_example:
@@ -160,14 +172,27 @@ def make_doc(
         for s in sd:
             name = s['name']
             doc = s.get('docs', {})
+            subtext = s['text']
+            if 'value_attributes' in s:
+                # The keys here are the user's own, so the only way a reader learns
+                # what to type is this sentence; say it before the value schema.
+                key_text = s.get('key_text', '')
+                # key_text is the schema author's prose; a label avoids assuming
+                # anything about its capitalization or grammar
+                keydoc = f'\n\nKey: {key_text}' if key_text else ''
+                subtext = (
+                    f'{subtext}\n\nThis section is keyed by names you choose; '
+                    f'every value takes the attributes below.{keydoc}'
+                )
             with open(outdir / f'{name}.rst', 'w') as f:
                 make_doc(
-                    s['attributes'],
+                    # sd holds only nodes that declare children, so this is never None
+                    subattributes(s) or [],
                     name,
-                    s['text'],
+                    subtext,
                     f,
                     docname=doc.get('title', ''),
-                    doctext=doc.get('text', ''),
+                    doctext=doc.get('text', '') if 'value_attributes' not in s else subtext,
                     docexample=doc.get('example', {}),
                     rootdir=str(rootpath),
                     footer_style=footer_style,

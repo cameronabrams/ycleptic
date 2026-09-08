@@ -130,6 +130,9 @@ There are several other keys an attribute may have:
 3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  This is currently enforced for ``str`` attributes only, and the comparison honors ``case_sensitive`` (below); on an attribute of any other type the list has no effect.  The allowed values appear in interactive help and in the output of ``yclept make-doc``.
 4. ``case_sensitive``: for ``str`` attributes only; a boolean that defaults to ``True``.  When ``False``, the user's value is matched against ``choices`` case-insensitively and stored in casefolded (lower-case) form.
 5. ``docs``: a block that enriches the output of ``yclept make-doc``.  It may contain ``title`` and ``text`` strings and a YAML-format ``example`` showing the attribute in use.  See :ref:`base_config_docs_key` below.
+6. ``value_attributes``: for ``dict`` attributes only; declares the schema for the *values* of a mapping whose keys the user invents.  See :ref:`base_config_free_keys` below.
+7. ``key_text``: a one-line description of what a free-form key *means*, used only alongside ``value_attributes``.
+8. ``list_defaults``: for ``list`` attributes only; either ``append`` (the default) or ``replace``, controlling what happens to a declared ``default`` when the user supplies a list of their own.  See :ref:`base_config_list_defaults` below.
 
 .. warning::
 
@@ -144,6 +147,109 @@ There are several other keys an attribute may have:
    Constructing a :class:`~ycleptic.yclept.Yclept` reports these as a
    :class:`~ycleptic.errors.YclepticSpecWarning`, and ``yclept check-spec``
    reports them from the command line.  See :ref:`usage_yclept_check_spec`.
+
+.. _base_config_free_keys:
+
+Mappings whose keys the user chooses
+--------------------------------------
+
+``attributes`` names the keys a user may write, and any other key is an error.
+That is the right model for most configuration, but some sections are keyed by
+names only the user knows --- molecules in a formulation, named reactions,
+labelled species.  Declaring such a section as a bare ``type: dict`` passes it
+through unvalidated, which means no defaults, no type checking and no generated
+documentation for exactly the content users are most likely to get wrong.
+
+A ``dict`` attribute may instead declare ``value_attributes``: the schema that
+*every value* under it must satisfy.  The keys stay free.
+
+.. code-block:: yaml
+
+    - name: constituents
+      type: dict
+      text: Molecular constituents of the system
+      key_text: a molecule name, e.g. STY, BPA, GMA
+      value_attributes:
+        - name: smiles
+          type: str
+          required: True
+          text: SMILES string for this molecule
+        - name: count
+          type: int
+          default: 100
+          text: how many molecules to place
+
+A user then writes whatever keys they like, and each value is validated as an
+ordinary attribute block:
+
+.. code-block:: yaml
+
+    constituents:
+      STY:
+        smiles: "C=Cc1ccccc1"
+      GMA:
+        smiles: "CC(=C)C(=O)OCC1CO1"
+        count: 50
+
+``STY`` gets ``count: 100`` from the default; ``GMA`` keeps its 50.  A
+misspelled attribute *inside* a value is still an error, and the message names
+the entry it came from --- ``Attribute 'smiels' invalid; expecting one of
+['smiles', 'count'] under 'constituents[STY]'``.
+
+``value_attributes`` holds ordinary attribute specifications, so anything you
+can write under ``attributes`` you can write here, nesting included.
+
+.. note::
+
+   ``attributes`` and ``value_attributes`` are mutually exclusive on one
+   attribute: a node either names its legal keys or accepts any key, never
+   both.  Declaring both is an error.
+
+``key_text`` is optional but worth writing.  For an ordinary attribute, a user
+learns what to type by reading the list of legal keys; for a free-key mapping
+there is no such list, so ``key_text`` is the only thing telling them what a key
+*is*.  It is rendered by both ``yclept make-doc`` and interactive help.
+
+.. _base_config_list_defaults:
+
+What a ``default`` list does when the user supplies one
+---------------------------------------------------------
+
+When a ``list`` attribute has a ``default`` and the user also supplies a list,
+ycleptic's historical behavior is to **add** the two: the default comes first,
+then the user's entries.  That is what you want for a list the user extends ---
+a set of standard force-field files, say, to which a user adds one of their own.
+
+It is emphatically *not* what you want for a list the user is meant to
+*supersede*.  A default equilibration ladder of ``[min, nvt, npt]`` and a user
+who writes ``[nvt]`` produces ``[min, nvt, npt, nvt]``: the whole default
+protocol runs, and then the user's step runs again at the end.  Nothing raises;
+the run simply does the wrong thing.
+
+Declare which you mean with ``list_defaults``:
+
+.. code-block:: yaml
+
+    - name: equilibration
+      type: list
+      list_defaults: replace
+      text: the equilibration ladder
+      default: [min, nvt, npt]
+
+``append`` is the default and preserves the historical behavior, so existing
+base configs are unaffected.  Under ``replace``, a list the user supplies is
+used verbatim, and the declared default applies only when the user omits the
+attribute altogether.
+
+Both settings are stated in generated documentation and in interactive help
+wherever a list default is shown, so a user need not guess which applies.
+
+.. warning::
+
+   ``list_defaults`` governs the ``list`` attribute it is declared on.  It does
+   not reach inside a bare ``dict`` attribute, where list-valued entries are
+   merged by :func:`~ycleptic.dictthings.special_update` and are always
+   appended.
 
 .. _base_config_docs_key:
 

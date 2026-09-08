@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- A `dict` attribute may declare `value_attributes` instead of `attributes`, describing the schema every *value* of a mapping must satisfy while leaving the keys for the user to invent. Sections keyed by names only the user knows — molecules in a formulation, named reactions — previously had to be declared as bare `type: dict` and passed through with no validation, no defaults and no generated documentation; they can now be specified as fully as any other attribute. Errors inside a value name the entry they came from, e.g. `under 'constituents[STY]'`
+- `key_text`, a one-line description of what a free-form key means, rendered by `yclept make-doc` and interactive help. A free-key mapping has no list of legal keys for a user to read, so this is the only thing telling them what a key is
+- `list_defaults: append | replace` on a `list` attribute, controlling what happens to a declared `default` when the user supplies a list of their own. `append` is the default and is the historical behavior. Under `replace` the user's list is used verbatim, the default applying only when the attribute is omitted entirely
+- Generated documentation and interactive help now state, wherever a non-empty list default is shown, whether a user-supplied list is added to it or replaces it
+
+### Fixed
+- `yclept check-spec` and the load-time spec check now report a node declaring both `attributes` and `value_attributes`, `value_attributes` on a non-`dict` attribute, `key_text` without `value_attributes`, `list_defaults` on a non-`list` attribute, and an unrecognized `list_defaults` value. Attribute specs nested under `value_attributes` are checked too, with `[*]` in the reported path marking the step through a free-form key
+
 ## [2.3.0] - 2026-08-13
 
 ### Added

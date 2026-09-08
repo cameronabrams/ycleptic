@@ -17,7 +17,7 @@ from .errors import YclepticSpecWarning
 from .makedoc import make_doc
 from .speccheck import check_base_spec, format_problems
 from .stringthings import raise_clean
-from .walkers import make_def, mwalk, dwalk
+from .walkers import make_def, mwalk, dwalk, subattributes
 
 logger = logging.getLogger(__name__)
 
@@ -174,9 +174,20 @@ class Yclept(UserDict):
         end = H.end
         H.write_func(f'\n{item["name"]}:{end}')
         H.write_func(f'    {textwrap.fill(item["text"], subsequent_indent="      ")}{end}')
+        if 'value_attributes' in item:
+            H.write_func(
+                f'    Keyed by names you choose; every value takes the attributes below.{end}'
+            )
+            if 'key_text' in item:
+                H.write_func(f'    key: {item["key_text"]}{end}')
         if item['type'] != 'dict':
             if 'default' in item:
                 H.write_func(f'    default: {item["default"]}{end}')
+                if item['type'] == 'list' and item['default']:
+                    if item.get('list_defaults', 'append') == 'replace':
+                        H.write_func(f'    A list you supply replaces this default.{end}')
+                    else:
+                        H.write_func(f'    A list you supply is added after this default.{end}')
             if 'choices' in item:
                 H.write_func(
                     f'    allowed values: {", ".join([str(_) for _ in item["choices"]])}{end}'
@@ -208,7 +219,7 @@ class Yclept(UserDict):
     def _show_subattributes(self, interactive: bool = False):
         H: Namespace = self.H
         subds = [x['name'] for x in H.base]
-        hassubs = ['attributes' in x for x in H.base]
+        hassubs = [subattributes(x) is not None for x in H.base]
         att = [''] * len(subds)
         if interactive:
             subds += ['..', '!']
@@ -271,12 +282,13 @@ class Yclept(UserDict):
                 idx = downs.index(choice)
                 if len(init_keylist) == 0:
                     self._show_item(idx)
-                if 'attributes' in H.base[idx]:
+                subs = subattributes(H.base[idx])
+                if subs is not None:
                     # this is not a leaf, but we just showed it
                     # so we history the base and reassign it
                     self.basestack.append(H.base)
                     self.path.append(choice)
-                    H.base = H.base[idx]['attributes']
+                    H.base = subs
                 else:
                     # this is a leaf, and we just showed it,
                     # so we can dehistory it but keep the base

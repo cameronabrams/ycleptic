@@ -130,9 +130,10 @@ There are several other keys an attribute may have:
 3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  This is currently enforced for ``str`` attributes only, and the comparison honors ``case_sensitive`` (below); on an attribute of any other type the list has no effect.  The allowed values appear in interactive help and in the output of ``yclept make-doc``.
 4. ``case_sensitive``: for ``str`` attributes only; a boolean that defaults to ``True``.  When ``False``, the user's value is matched against ``choices`` case-insensitively and stored in casefolded (lower-case) form.
 5. ``docs``: a block that enriches the output of ``yclept make-doc``.  It may contain ``title`` and ``text`` strings and a YAML-format ``example`` showing the attribute in use.  See :ref:`base_config_docs_key` below.
-6. ``value_attributes``: for ``dict`` attributes only; declares the schema for the *values* of a mapping whose keys the user invents.  See :ref:`base_config_free_keys` below.
-7. ``key_text``: a one-line description of what a free-form key *means*, used only alongside ``value_attributes``.
-8. ``list_defaults``: for ``list`` attributes only; either ``append`` (the default) or ``replace``, controlling what happens to a declared ``default`` when the user supplies a list of their own.  See :ref:`base_config_list_defaults` below.
+6. ``value_attributes``: for ``dict`` and ``list`` attributes; declares the schema every *element* must satisfy --- every value of a mapping whose keys the user invents, or every item of a list.  See :ref:`base_config_free_keys` and :ref:`base_config_record_lists` below.
+7. ``value_type``: the same idea for elements that are plain scalars rather than attribute blocks; one of ``str``, ``int``, ``float`` or ``bool``.
+8. ``key_text``: a one-line description of what a free-form key *means*, used alongside ``value_attributes`` or ``value_type`` on a ``dict``.
+9. ``list_defaults``: for ``list`` attributes only; either ``append`` (the default) or ``replace``, controlling what happens to a declared ``default`` when the user supplies a list of their own.  See :ref:`base_config_list_defaults` below.
 
 .. warning::
 
@@ -209,6 +210,99 @@ can write under ``attributes`` you can write here, nesting included.
 learns what to type by reading the list of legal keys; for a free-key mapping
 there is no such list, so ``key_text`` is the only thing telling them what a key
 *is*.  It is rendered by both ``yclept make-doc`` and interactive help.
+
+Values that are plain scalars
+++++++++++++++++++++++++++++++
+
+``value_attributes`` describes a value that is an attribute *block*.  When the
+values are bare scalars --- an atom label mapped to an atom name, a slot number
+mapped to a reactant --- declare ``value_type`` instead:
+
+.. code-block:: yaml
+
+    - name: reactive_atoms
+      type: dict
+      text: Reactive atoms, keyed by label
+      key_text: an atom label such as C1
+      value_type: str
+
+Every value is then checked against that type.  Note that ``value_type: str``
+*is* enforced, unlike a declared ``type: str`` attribute, which ycleptic
+validates through ``choices`` rather than by type; an element schema has no
+such fallback, so an unchecked ``str`` would accept anything.
+
+.. _base_config_record_lists:
+
+Lists of records that all look alike
+--------------------------------------
+
+A ``list`` attribute with ``attributes`` means something specific in ycleptic:
+each item is a single-key mapping naming *which* of the declared attributes it
+is, and the list is an ordered sequence of such tasks.
+
+.. code-block:: yaml
+
+    tasks:
+      - md:
+          ps: 100
+      - minimize:
+          steps: 500
+
+That idiom does not fit a list whose items are flat, multi-key records that all
+have the same shape:
+
+.. code-block:: yaml
+
+    stages:
+      - ensemble: npt
+        temperature: 300
+        ps: 100
+      - ensemble: nvt
+
+For that, declare ``value_attributes`` on the list.  It is the same key used for
+free-key mappings and means the same thing --- *every element satisfies this
+schema* --- with a list's elements being its items:
+
+.. code-block:: yaml
+
+    - name: stages
+      type: list
+      text: The equilibration stages, in order
+      value_attributes:
+        - name: ensemble
+          type: str
+          required: True
+          choices: [min, nvt, npt]
+          text: which ensemble this stage runs in
+        - name: temperature
+          type: float
+          default: 300.0
+          text: temperature in K
+        - name: ps
+          type: int
+          default: 100
+          text: duration in ps
+
+Each item is validated as an ordinary attribute block, so defaults are filled in
+per item and errors name the item they came from --- ``Attribute 'ensemlbe'
+invalid; expecting one of ['ensemble', 'temperature', 'ps'] under 'stages[1]'``.
+
+``value_type`` works on a list too, for a list of plain scalars whose type you
+want checked:
+
+.. code-block:: yaml
+
+    - name: temperatures
+      type: list
+      value_type: float
+      text: the temperatures to sample
+
+.. note::
+
+   ``attributes``, ``value_attributes`` and ``value_type`` are mutually
+   exclusive: a node describes what is under it exactly one way.  Choosing
+   between the first two on a list is a question of shape --- tagged tasks that
+   may differ from one another, or homogeneous records that do not.
 
 .. _base_config_list_defaults:
 

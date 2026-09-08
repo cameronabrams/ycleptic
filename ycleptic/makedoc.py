@@ -104,6 +104,16 @@ def make_doc(
             if 'choices' in sv:
                 allowed = ', '.join(f'``{c}``' for c in sv['choices'])
                 fp.write(f'    Allowed values: {allowed}\n\n')
+            if 'value_type' in sv:
+                if sv.get('type') == 'list':
+                    fp.write(f'    Every item is a ``{sv["value_type"]}``.\n\n')
+                else:
+                    fp.write(
+                        '    Keyed by names you choose; every value is a '
+                        f'``{sv["value_type"]}``.\n\n'
+                    )
+                    if 'key_text' in sv:
+                        fp.write(f'    Key: {sv["key_text"]}\n\n')
             sv_example = sv.get('docs', {}).get('example', {})
             if sv_example:
                 fp.write('    Example:\n\n')
@@ -174,16 +184,22 @@ def make_doc(
             doc = s.get('docs', {})
             subtext = s['text']
             if 'value_attributes' in s:
-                # The keys here are the user's own, so the only way a reader learns
-                # what to type is this sentence; say it before the value schema.
-                key_text = s.get('key_text', '')
-                # key_text is the schema author's prose; a label avoids assuming
-                # anything about its capitalization or grammar
-                keydoc = f'\n\nKey: {key_text}' if key_text else ''
-                subtext = (
-                    f'{subtext}\n\nThis section is keyed by names you choose; '
-                    f'every value takes the attributes below.{keydoc}'
-                )
+                # The elements here are the user's own, so the only way a reader
+                # learns what to write is this sentence; say it before the schema.
+                if s.get('type') == 'list':
+                    subtext = (
+                        f'{subtext}\n\nThis section is a list, and every item takes '
+                        'the attributes below.'
+                    )
+                else:
+                    key_text = s.get('key_text', '')
+                    # key_text is the schema author's prose; a label avoids assuming
+                    # anything about its capitalization or grammar
+                    keydoc = f'\n\nKey: {key_text}' if key_text else ''
+                    subtext = (
+                        f'{subtext}\n\nThis section is keyed by names you choose; '
+                        f'every value takes the attributes below.{keydoc}'
+                    )
             with open(outdir / f'{name}.rst', 'w') as f:
                 make_doc(
                     # sd holds only nodes that declare children, so this is never None

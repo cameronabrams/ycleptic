@@ -164,6 +164,46 @@ def _list_defaults_mode(dx: dict, dname: str) -> str:
     return mode
 
 
+VALUE_TYPES = ('str', 'int', 'float', 'bool')
+"""Scalar types an element schema may declare via ``value_type``."""
+
+
+def _value_type(dx: dict, dname: str) -> str:
+    """
+    Return the declared ``value_type`` of ``dx``, or report an unusable one.
+    """
+    vt = dx.get('value_type')
+    if vt not in VALUE_TYPES:
+        raise_clean(
+            ValueError(
+                f"Attribute '{dx.get('name', '?')}' of '{dname}' declares "
+                f'value_type: {vt!r}; expected one of {", ".join(VALUE_TYPES)}.'
+            )
+        )
+    return vt
+
+
+def _value_type_ok(typ: str, value) -> bool:
+    """
+    Return True if ``value`` is acceptable for a declared ``value_type``.
+
+    Unlike :func:`_scalar_type_ok`, ``str`` is genuinely checked here.  That
+    function leaves strings to ``choices`` because a declared ``str`` attribute
+    is validated that way; an element schema has no such fallback, so an
+    unchecked ``str`` would accept anything.
+    """
+    if typ == 'str':
+        return isinstance(value, str)
+    return _scalar_type_ok(typ, value)
+
+
+def _element_spec(dx: dict) -> dict:
+    """
+    Return a synthetic attribute-block spec for one element of ``dx``.
+    """
+    return {'name': dx.get('name', '?'), 'attributes': dx['value_attributes']}
+
+
 def _fwalk(dx: dict, M: dict, dname: str):
     """
     Validate every value of a free-key mapping ``M`` against ``dx``'s
@@ -188,7 +228,18 @@ def _fwalk(dx: dict, M: dict, dname: str):
         raise_clean(
             ValueError(f"Attribute '{name}' of '{dname}' must be a mapping; found {type(M)}.")
         )
-    spec = {'name': name, 'attributes': dx['value_attributes']}
+    if 'value_type' in dx:
+        vt = _value_type(dx, dname)
+        for key, val in M.items():
+            if not _value_type_ok(vt, val):
+                raise_clean(
+                    ValueError(
+                        f"Entry '{key}' of '{name}' must be of type {vt}; "
+                        f'found value {val!r} of type {type(val).__name__}.'
+                    )
+                )
+        return
+    spec = _element_spec(dx)
     for key in list(M.keys()):
         if M[key] is None:
             M[key] = {}
@@ -200,6 +251,54 @@ def _fwalk(dx: dict, M: dict, dname: str):
                 )
             )
         dwalk({**spec, 'name': f'{name}[{key}]'}, M[key])
+
+
+def _rwalk(dx: dict, L: list, dname: str):
+    """
+    Validate every *item* of list ``L`` against ``dx``'s element schema.
+
+    This is the homogeneous-list form: every item looks alike, described by
+    ``value_attributes`` (a record) or ``value_type`` (a scalar).  It is
+    distinct from :func:`lwalk`, which implements the tagged-task idiom where
+    each item is a single-key dict naming which of several declared attributes
+    it is.  A list of flat multi-key records --- ``- ensemble: npt`` with
+    ``temperature`` and ``ps`` beside it --- is this form, not that one.
+
+    Parameters
+    ----------
+    dx : dict
+        The list attribute spec; carries ``value_attributes`` or ``value_type``.
+    L : list
+        The user's list.
+    dname : str
+        Name of the enclosing block, used in error messages.
+    """
+    name = dx.get('name', '?')
+    if not isinstance(L, list):
+        raise_clean(ValueError(f"Attribute '{name}' of '{dname}' must be a list; found {type(L)}."))
+    if 'value_type' in dx:
+        vt = _value_type(dx, dname)
+        for i, val in enumerate(L):
+            if not _value_type_ok(vt, val):
+                raise_clean(
+                    ValueError(
+                        f"Item {i} of '{name}' must be of type {vt}; "
+                        f'found value {val!r} of type {type(val).__name__}.'
+                    )
+                )
+        return
+    spec = _element_spec(dx)
+    for i, item in enumerate(L):
+        if item is None:
+            L[i] = item = {}
+        if not isinstance(item, dict):
+            raise_clean(
+                ValueError(
+                    f"Item {i} of '{name}' must be a mapping of its attributes; "
+                    f'found value {item!r} of type {type(item).__name__}.'
+                )
+            )
+        dwalk({**spec, 'name': f'{name}[{i}]'}, item)
 
 
 def dwalk(D: dict, I: dict):
@@ -240,12 +339,12 @@ def dwalk(D: dict, I: dict):
         # logger.debug(f' d {d}')
         # get its type
         typ = _declared_type(dx, dname)
-        if 'attributes' in dx and 'value_attributes' in dx:
+        declared = [k for k in ('attributes', 'value_attributes', 'value_type') if k in dx]
+        if len(declared) > 1:
             raise_clean(
                 ValueError(
-                    f"Attribute '{d}' of '{dname}' declares both 'attributes' and "
-                    "'value_attributes'; a node either names its keys or accepts any key, "
-                    'not both.'
+                    f"Attribute '{d}' of '{dname}' declares {' and '.join(declared)}; "
+                    'a node describes what is under it exactly one way.'
                 )
             )
         if typ == 'dict' and (d in I and not isinstance(I[d], dict)):
@@ -278,7 +377,7 @@ def dwalk(D: dict, I: dict):
                 if 'attributes' in dx:
                     I[d] = {}
                     dwalk(dx, I[d])
-                elif 'value_attributes' in dx:
+                elif 'value_attributes' in dx or 'value_type' in dx:
                     # keys are the user's to invent, so none are conjured here;
                     # any default mapping still gets its per-value defaults filled.
                     # Copy first: _fwalk writes into this mapping, and the object
@@ -291,7 +390,11 @@ def dwalk(D: dict, I: dict):
                 if 'required' in dx:
                     if not dx['required']:
                         continue
-                I[d] = dx.get('default', [])
+                if 'value_attributes' in dx or 'value_type' in dx:
+                    I[d] = deepcopy(dx.get('default', []))
+                    _rwalk(dx, I[d], dname)
+                else:
+                    I[d] = dx.get('default', [])
         # this attribute does appear in I
         else:
             if typ in ('int', 'float', 'bool', 'tuple') and not _scalar_type_ok(typ, I[d]):
@@ -312,7 +415,7 @@ def dwalk(D: dict, I: dict):
                         if I[d].casefold() not in [x.casefold() for x in dx['choices']]:
                             raise_clean(
                                 ValueError(
-                                    f"Attribute '{d}' of '{dx['name']}' must be one of {', '.join(dx['choices'])} (case-insensitive); found '{I[d]}'"
+                                    f"Attribute '{d}' of '{dname}' must be one of {', '.join(dx['choices'])} (case-insensitive); found '{I[d]}'"
                                 )
                             )
                     else:
@@ -320,14 +423,14 @@ def dwalk(D: dict, I: dict):
                         if I[d] not in dx['choices']:
                             raise_clean(
                                 ValueError(
-                                    f"Attribute '{d}' of '{dx['name']}' must be one of {', '.join(dx['choices'])}; found '{I[d]}'"
+                                    f"Attribute '{d}' of '{dname}' must be one of {', '.join(dx['choices'])}; found '{I[d]}'"
                                 )
                             )
             elif typ == 'dict':
                 # process descendants
                 if 'attributes' in dx:
                     dwalk(dx, I[d])
-                elif 'value_attributes' in dx:
+                elif 'value_attributes' in dx or 'value_type' in dx:
                     # special_update writes into its first argument, so the base
                     # spec's default must not be passed in directly
                     I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
@@ -343,8 +446,12 @@ def dwalk(D: dict, I: dict):
                     # the user's; 'replace' honors the user's list verbatim, the
                     # default then applying only when the key is absent altogether
                     if _list_defaults_mode(dx, dname) == 'append':
-                        defaults = dx.get('default', [])
+                        # copied because _rwalk writes per-item defaults into
+                        # record items, and these belong to the base spec
+                        defaults = deepcopy(dx.get('default', []))
                         I[d] = defaults + I[d]
+                    if 'value_attributes' in dx or 'value_type' in dx:
+                        _rwalk(dx, I[d], dname)
             elif typ == 'tuple':
                 if 'attributes' in dx:
                     raise_clean(
@@ -358,6 +465,11 @@ def lwalk(D: dict, L: list[dict]):
     """
     Recursively processes a list of items L by walking recursively through it
     along with the default config-specification dict D
+
+    This is the *tagged-task* idiom: each item is a single-key mapping naming
+    which of ``D``'s declared attributes it is, so the items may differ from one
+    another.  A list whose items are flat, homogeneous records instead declares
+    ``value_attributes`` and is handled by :func:`_rwalk`.
 
     Parameters
     ----------

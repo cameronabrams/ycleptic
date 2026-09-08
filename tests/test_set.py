@@ -707,7 +707,9 @@ attributes:
             '      - {name: b, type: str, text: b}\n'
         )
         problems = check_base_spec(base)
-        self.assertTrue(any('declares both' in p for p in problems))
+        self.assertTrue(
+            any("declares 'attributes' and 'value_attributes'" in p for p in problems)
+        )
 
     def test_both_child_declarations_raise_at_load(self):
         with open('both_base.yaml', 'w') as f:
@@ -784,6 +786,166 @@ attributes:
         Y = Yclept('freekey_mut.yaml', userdict={'things': {'mine': {'size': 3}}})
         self.assertIn('mine', Y['user']['things'])
         self.assertEqual(Y['base']['attributes'][0]['default'], {'preset': {}})
+
+    # ------------------------------------------------------------------
+    # value_type: free-key mappings and lists of scalars
+    # ------------------------------------------------------------------
+
+    def _write_value_type_base(self, typ='str', container='dict', name='vt_base.yaml'):
+        node = {
+            'name': 'labels',
+            'type': container,
+            'text': 'elements of a scalar type',
+            'value_type': typ,
+        }
+        if container == 'dict':
+            node['key_text'] = 'a label'
+        with open(name, 'w') as f:
+            yaml.dump({'attributes': [node]}, f)
+        return name
+
+    def test_value_type_mapping_accepts_scalars(self):
+        """A free-key mapping of scalars needs no per-value attribute block."""
+        base = self._write_value_type_base()
+        Y = Yclept(base, userdict={'labels': {'C1': 'carbon', 'N2': 'nitrogen'}})
+        self.assertEqual(Y['user']['labels'], {'C1': 'carbon', 'N2': 'nitrogen'})
+
+    def test_value_type_mapping_rejects_wrong_scalar(self):
+        base = self._write_value_type_base()
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'labels': {'C1': 3}})
+        self.assertIn("Entry 'C1'", str(cm.exception))
+        self.assertIn('str', str(cm.exception))
+
+    def test_value_type_str_is_actually_checked(self):
+        """str is validated here, unlike a declared str attribute which relies on choices."""
+        base = self._write_value_type_base(typ='int')
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={'labels': {'n': 'not-an-int'}})
+        Y = Yclept(base, userdict={'labels': {'n': 5}})
+        self.assertEqual(Y['user']['labels']['n'], 5)
+
+    def test_value_type_list_checks_every_item(self):
+        base = self._write_value_type_base(typ='int', container='list')
+        Y = Yclept(base, userdict={'labels': [1, 2, 3]})
+        self.assertEqual(Y['user']['labels'], [1, 2, 3])
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'labels': [1, 'two']})
+        self.assertIn('Item 1', str(cm.exception))
+
+    def test_spec_check_flags_unknown_value_type(self):
+        base = yaml.safe_load(
+            'attributes:\n  - {name: m, type: dict, text: t, value_type: string}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("did you mean 'str'?" in p for p in problems))
+
+    def test_spec_check_flags_key_text_on_a_list(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - {name: l, type: list, text: t, value_type: str, key_text: stray}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('positional and have no keys' in p for p in problems))
+
+    def test_spec_check_flags_three_way_declaration(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: m\n'
+            '    type: dict\n'
+            '    text: t\n'
+            '    value_type: str\n'
+            '    value_attributes:\n'
+            '      - {name: a, type: str, text: a}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('exactly one way' in p for p in problems))
+
+    # ------------------------------------------------------------------
+    # Lists of homogeneous multi-key records
+    # ------------------------------------------------------------------
+
+    def _write_record_list_base(self, name='reclist_base.yaml'):
+        spec = {
+            'attributes': [
+                {
+                    'name': 'stages',
+                    'type': 'list',
+                    'text': 'an ordered list of flat records',
+                    'value_attributes': [
+                        {
+                            'name': 'ensemble',
+                            'type': 'str',
+                            'text': 'the ensemble',
+                            'choices': ['nvt', 'npt', 'min'],
+                            'required': True,
+                        },
+                        {'name': 'ps', 'type': 'int', 'text': 'picoseconds', 'default': 100},
+                    ],
+                }
+            ]
+        }
+        with open(name, 'w') as f:
+            yaml.dump(spec, f)
+        return name
+
+    def test_record_list_accepts_multi_key_items(self):
+        """The shape lwalk's tagged-task idiom cannot express."""
+        base = self._write_record_list_base()
+        Y = Yclept(base, userdict={'stages': [{'ensemble': 'npt', 'ps': 50}]})
+        self.assertEqual(Y['user']['stages'], [{'ensemble': 'npt', 'ps': 50}])
+
+    def test_record_list_fills_per_item_defaults(self):
+        base = self._write_record_list_base()
+        Y = Yclept(base, userdict={'stages': [{'ensemble': 'npt'}, {'ensemble': 'nvt'}]})
+        self.assertEqual([s['ps'] for s in Y['user']['stages']], [100, 100])
+
+    def test_record_list_errors_name_the_index(self):
+        base = self._write_record_list_base()
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'stages': [{'ensemble': 'npt'}, {'tpyo': 1}]})
+        self.assertIn('stages[1]', str(cm.exception))
+
+    def test_record_list_enforces_required_and_choices(self):
+        base = self._write_record_list_base()
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={'stages': [{'ps': 5}]})
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'stages': [{'ensemble': 'bogus'}]})
+        # the message names the enclosing item, not the attribute twice over
+        self.assertIn("of 'stages[0]'", str(cm.exception))
+
+    def test_record_list_item_must_be_a_mapping(self):
+        base = self._write_record_list_base()
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'stages': ['nope']})
+        self.assertIn('Item 0', str(cm.exception))
+
+    def test_record_list_defaults_do_not_mutate_the_base_spec(self):
+        spec = {
+            'attributes': [
+                {
+                    'name': 'stages',
+                    'type': 'list',
+                    'text': 'records with a default',
+                    'default': [{'ensemble': 'min'}],
+                    'value_attributes': [
+                        {'name': 'ensemble', 'type': 'str', 'text': 'e'},
+                        {'name': 'ps', 'type': 'int', 'text': 'p', 'default': 100},
+                    ],
+                }
+            ]
+        }
+        with open('reclist_mut.yaml', 'w') as f:
+            yaml.dump(spec, f)
+        Y = Yclept('reclist_mut.yaml', userdict={})
+        self.assertEqual(Y['user']['stages'], [{'ensemble': 'min', 'ps': 100}])
+        self.assertEqual(Y['base']['attributes'][0]['default'], [{'ensemble': 'min'}])
+
+    def test_tagged_task_lists_still_work(self):
+        """lwalk's idiom is untouched: a list with 'attributes' is still tagged tasks."""
+        Y = Yclept(BFILE, userdict={'attribute_2': [{'attribute_2a': {'d2a_val2': 9}}]})
+        self.assertEqual(Y['user']['attribute_2'][0]['attribute_2a']['d2a_val2'], 9)
 
     # ------------------------------------------------------------------
     # list_defaults

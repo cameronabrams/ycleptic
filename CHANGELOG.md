@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-08
+
 ### Added
 - A `dict` attribute may declare `value_attributes` instead of `attributes`, describing the schema every *value* of a mapping must satisfy while leaving the keys for the user to invent. Sections keyed by names only the user knows — molecules in a formulation, named reactions — previously had to be declared as bare `type: dict` and passed through with no validation, no defaults and no generated documentation; they can now be specified as fully as any other attribute. Errors inside a value name the entry they came from, e.g. `under 'constituents[STY]'`
 - `key_text`, a one-line description of what a free-form key means, rendered by `yclept make-doc` and interactive help. A free-key mapping has no list of legal keys for a user to read, so this is the only thing telling them what a key is

@@ -1111,9 +1111,17 @@ attributes:
         Y = Yclept(base, userdict={'opts': {'threads': 8}})
         Y.update_user({'opts': {'debug': True}})
         self.assertEqual(Y['base']['attributes'][0]['default'], {'cores': 4})
-        # update_user's dict.update replaces 'opts' wholesale, so 'threads' is gone;
-        # it used to survive only because the schema had been polluted with it
+        # update_user is a top-level dict.update, so passing 'opts' replaces its
+        # value entirely and 'threads' is gone.  It used to survive that
+        # replacement only because it had been merged into the schema's default.
         self.assertEqual(Y['user']['opts'], {'cores': 4, 'debug': True})
+
+    def test_update_user_leaves_unmentioned_attributes_alone(self):
+        """The boundary of the change above: only the replaced attribute is affected."""
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={'opts': {'threads': 8}})
+        Y.update_user({'files': ['z.dat']})
+        self.assertEqual(Y['user']['opts'], {'cores': 4, 'threads': 8})
 
     # ------------------------------------------------------------------
     # Utility function tests

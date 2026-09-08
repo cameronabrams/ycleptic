@@ -126,7 +126,7 @@ In this case, there are subattributes.  If the ``type`` was ``dict``, then the s
 There are several other keys an attribute may have:
 
 1. ``default``: the default value (or values) assigned to the attribute when the user declares it but provides no value.
-2. ``required``: a boolean.  If ``True``, the attribute must be declared (and if it is nested, all its antecedent attributes must be declared too).  If ``False``, no defaults are assigned: the user need not declare the attribute at all, but declaring it without providing a value is an error.
+2. ``required``: a boolean.  If ``True``, the attribute must be declared (and if it is nested, all its antecedent attributes must be declared too).  If ``False``, no defaults are assigned: the user need not declare the attribute at all, but declaring it without providing a value is an error.  ``required: True`` binds only when nothing else can supply the value --- see :ref:`base_config_required` below.
 3. ``choices``: a list of allowed values; if the user gives a value that is not in the list, an error occurs.  This is currently enforced for ``str`` attributes only, and the comparison honors ``case_sensitive`` (below); on an attribute of any other type the list has no effect.  The allowed values appear in interactive help and in the output of ``yclept make-doc``.
 4. ``case_sensitive``: for ``str`` attributes only; a boolean that defaults to ``True``.  When ``False``, the user's value is matched against ``choices`` case-insensitively and stored in casefolded (lower-case) form.
 5. ``docs``: a block that enriches the output of ``yclept make-doc``.  It may contain ``title`` and ``text`` strings and a YAML-format ``example`` showing the attribute in use.  See :ref:`base_config_docs_key` below.
@@ -344,6 +344,36 @@ wherever a list default is shown, so a user need not guess which applies.
    not reach inside a bare ``dict`` attribute, where list-valued entries are
    merged by :func:`~ycleptic.dictthings.special_update` and are always
    appended.
+
+.. _base_config_required:
+
+When ``required: True`` actually binds
+----------------------------------------
+
+``required: True`` means *the user must supply this*, so it takes effect only
+when nothing else can supply it:
+
+- a declared ``default`` supplies the value, and the attribute is filled from it
+  without error.  This is true of scalars and containers alike;
+- a ``dict`` declaring ``attributes`` supplies the block: it is synthesized from
+  its children, whose own ``required`` flags then apply in turn;
+- otherwise --- a ``list``, or a ``dict`` with neither ``attributes`` nor a
+  ``default`` --- there is nothing to fill the attribute with, and omitting it
+  is an error.
+
+Note that ``attributes`` on a **list** does not satisfy ``required``.  There it
+names the kinds of item that may appear, and an empty list contains none of
+them, so a required list omitted by the user is still an error.  The same holds
+for a mapping declared with ``value_attributes`` or ``value_type``: its keys are
+the user's to invent, so ycleptic cannot conjure one.
+
+.. versionchanged:: 2.4.1
+
+   ``required: True`` previously had no effect on a ``list`` or on a ``dict``
+   with no subattributes --- an omitted attribute was quietly filled with an
+   empty list or mapping.  Only scalars enforced it.  A schema declaring
+   ``required`` on such an attribute now gets the behavior it asks for, which
+   means a user config that was silently accepted before may now be rejected.
 
 .. _base_config_docs_key:
 

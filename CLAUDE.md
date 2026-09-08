@@ -90,6 +90,24 @@ downstream app.
 - `__version__` comes from installed package metadata, not a literal; only
   `pyproject.toml` carries the version, and only `release.sh` edits it.
 
+**A consequence of that last point, which has bitten a downstream consumer.**
+Between releases, `main` carries the *previous* release's version number —
+unreleased work on `main` today still reports `2.3.0`. The code is current; only
+the number lags. Anything that keys on the version rather than the tree cannot
+tell the difference: `uv` and `pip` wheel caches will happily serve a cached
+`2.3.0` artifact built from older source. Symptoms are new features appearing
+absent while the checkout plainly contains them.
+
+When testing a consumer against an unreleased checkout, verify what you actually
+loaded rather than trusting the version:
+
+    python -c "import ycleptic, ycleptic.walkers as w; \
+               print(ycleptic.__file__, hasattr(w, 'subattributes'))"
+
+An editable install, `PYTHONPATH`, or `uv run --project <checkout>` all resolve
+to the working tree; a plain non-editable install of the checkout is the case
+that can be served stale.
+
 ## Working commands
 
     uv run --extra test pytest tests -q      # 52 tests, <1s. NOT tests/unit

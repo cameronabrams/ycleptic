@@ -18,7 +18,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
   **This changes observable behavior in one narrow case.** `update_user` does a top-level `dict.update`, so passing a `dict` attribute replaces that attribute's value entirely. Sub-keys set by an earlier `update_user` used to survive that replacement, but only because they had been merged into the schema's default; now they do not. Top-level attributes the new data does not mention are untouched either way. Generated documentation built from a `Yclept` that carries a user config also no longer renders that user's values as documented defaults
 - A `choices` violation now names the enclosing block rather than repeating the attribute's own name, so the message reads `Attribute 'ensemble' of 'stages[0]'` instead of `Attribute 'ensemble' of 'ensemble'`
-- `yclept check-spec` and the load-time spec check now report a node declaring both `attributes` and `value_attributes`, `value_attributes` on a non-`dict` attribute, `key_text` without `value_attributes`, `list_defaults` on a non-`list` attribute, and an unrecognized `list_defaults` value, more than one of `attributes`/`value_attributes`/`value_type` on a single node, an unrecognized `value_type`, and `key_text` on a list, whose elements are positional and have no keys. Attribute specs nested under `value_attributes` are checked too, with `[*]` in the reported path marking the step through a free-form key
+- `yclept check-spec` and the load-time spec check learned the new vocabulary, and report several further declarations that do nothing:
+  - more than one of `attributes`, `value_attributes` and `value_type` on a single node — a node describes what is under it exactly one way
+  - `value_attributes` or `value_type` on an attribute that is neither a `dict` nor a `list`
+  - an unrecognized `value_type`
+  - `key_text` on a node that declares neither `value_attributes` nor `value_type`, and `key_text` on a `list`, whose elements are positional and have no keys
+  - `list_defaults` on a non-`list` attribute, on a `list` that declares `attributes` (a tagged-task list never merges a default), and an unrecognized `list_defaults` value
+
+  Attribute specs nested under `value_attributes` are checked too, with `[*]` in the reported path marking the step through a free-form key
 
 ## [2.3.0] - 2026-08-13
 

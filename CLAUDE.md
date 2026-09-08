@@ -108,6 +108,14 @@ An editable install, `PYTHONPATH`, or `uv run --project <checkout>` all resolve
 to the working tree; a plain non-editable install of the checkout is the case
 that can be served stale.
 
+`uv run --with <checkout>` is the trap, and it is silent. If the consuming
+project declares `ycleptic>=2.3.0` and the checkout also calls itself `2.3.0`,
+the floor is already satisfied and uv may resolve to the PyPI build instead of
+the path you named. Nothing errors, and the version string is identical either
+way, so the only reliable gate is file content — check `ycleptic.__file__`, or
+probe for a symbol the branch introduced. Observed 2026-09-08 while a downstream
+repo tried to test against an unreleased branch.
+
 ## Working commands
 
     uv run --extra test pytest tests -q      # 52 tests, <1s. NOT tests/unit

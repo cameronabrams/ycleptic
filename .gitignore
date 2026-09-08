@@ -87,6 +87,7 @@ tests/test_set/ydoc/
 tests/test_set/rcfile.yaml
 tests/test_set/spec-check-base.yaml
 tests/test_set/freekey_base.yaml
+tests/test_set/freekey_mut.yaml
 tests/test_set/listmode_base.yaml
 tests/test_set/both_base.yaml
 tests/test_set/type_base.yaml

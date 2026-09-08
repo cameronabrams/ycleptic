@@ -1176,6 +1176,62 @@ attributes:
         Y = Yclept(base, userdict={})
         self.assertEqual(Y['user']['a'], {'n': 1})
 
+    def test_required_parent_dicts_nest_without_their_own_defaults(self):
+        """pestifer's shape: required dicts nested two deep, none with a default,
+        satisfied only by descent to a leaf that has one.  Binding required on a
+        parent would fail every config that omits the block."""
+        base = self._write_required_base(
+            {
+                'name': 'charmmff',
+                'type': 'dict',
+                'text': 'outer required block, no default',
+                'required': True,
+                'attributes': [
+                    {
+                        'name': 'standard',
+                        'type': 'dict',
+                        'text': 'inner required block, no default',
+                        'required': True,
+                        'attributes': [
+                            {
+                                'name': 'rtf',
+                                'type': 'list',
+                                'text': 'required list, but it has a default',
+                                'required': True,
+                                'default': ['top_all36_prot.rtf'],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        Y = Yclept(base, userdict={})
+        self.assertEqual(
+            Y['user']['charmmff'], {'standard': {'rtf': ['top_all36_prot.rtf']}}
+        )
+
+    def test_required_parent_dict_still_raises_via_a_bare_required_child(self):
+        """Descent is not a blanket exemption: the child's own required still binds."""
+        base = self._write_required_base(
+            {
+                'name': 'outer',
+                'type': 'dict',
+                'text': 'required block, no default',
+                'required': True,
+                'attributes': [
+                    {
+                        'name': 'inner',
+                        'type': 'list',
+                        'text': 'required list with nothing to fill it',
+                        'required': True,
+                    }
+                ],
+            }
+        )
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={})
+        self.assertIn("'inner'", str(cm.exception))
+
     def test_required_false_container_is_still_skipped(self):
         base = self._write_required_base(
             {'name': 'a', 'type': 'list', 'text': 'opt-out', 'required': False}

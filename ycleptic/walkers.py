@@ -37,12 +37,12 @@ def make_def(L: list[dict], H: dict, *args):
         item = L[item_idx]
         for d in item.get('attributes', []):
             if 'default' in d:
-                H[d['name']] = d['default']
+                H[d['name']] = deepcopy(d['default'])
             else:
                 H[d['name']] = None
         if 'attributes' not in item:
             if 'default' in item:
-                H[item['name']] = item['default']
+                H[item['name']] = deepcopy(item['default'])
             else:
                 H[item['name']] = None
     elif len(args) > 1:
@@ -385,7 +385,7 @@ def dwalk(D: dict, I: dict):
                     I[d] = deepcopy(dx.get('default', {}))
                     _fwalk(dx, I[d], dname)
                 else:
-                    I[d] = dx.get('default', {})
+                    I[d] = deepcopy(dx.get('default', {}))
             elif typ == 'list':
                 if 'required' in dx:
                     if not dx['required']:
@@ -394,7 +394,7 @@ def dwalk(D: dict, I: dict):
                     I[d] = deepcopy(dx.get('default', []))
                     _rwalk(dx, I[d], dname)
                 else:
-                    I[d] = dx.get('default', [])
+                    I[d] = deepcopy(dx.get('default', []))
         # this attribute does appear in I
         else:
             if typ in ('int', 'float', 'bool', 'tuple') and not _scalar_type_ok(typ, I[d]):
@@ -436,7 +436,7 @@ def dwalk(D: dict, I: dict):
                     I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
                     _fwalk(dx, I[d], dname)
                 else:
-                    I[d] = special_update(dx.get('default', {}), I[d])
+                    I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
             elif typ == 'list':
                 # process list-item children
                 if 'attributes' in dx:

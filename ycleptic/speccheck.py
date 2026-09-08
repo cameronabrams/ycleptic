@@ -26,6 +26,7 @@ KNOWN_ATTRIBUTE_KEYS = frozenset(
         'case_sensitive',
         'attributes',
         'value_attributes',
+        'value_type',
         'key_text',
         'list_defaults',
         'docs',
@@ -44,6 +45,12 @@ KNOWN_TYPES = frozenset({'str', 'int', 'float', 'bool', 'tuple', 'list', 'dict'}
 #: Legal values of a list attribute's ``list_defaults`` key.
 KNOWN_LIST_DEFAULTS = frozenset({'append', 'replace'})
 
+#: Scalar types an element schema may declare via ``value_type``.
+KNOWN_VALUE_TYPES = frozenset({'str', 'int', 'float', 'bool'})
+
+#: Keys by which a node declares what lives under it.  At most one may appear.
+ELEMENT_DECLARATIONS = ('attributes', 'value_attributes', 'value_type')
+
 # Misspellings common enough to name outright rather than leave to difflib.
 _KEY_ALIASES = {
     'option': 'choices',
@@ -60,6 +67,9 @@ _KEY_ALIASES = {
     'additionalproperties': 'value_attributes',
     'key_help': 'key_text',
     'key_description': 'key_text',
+    'item_type': 'value_type',
+    'items': 'value_attributes',
+    'element_type': 'value_type',
 }
 
 _LIST_DEFAULTS_ALIASES = {
@@ -129,21 +139,39 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
             f"and this one is '{typ}'; the allowed values are not applied"
         )
 
-    if 'attributes' in node and 'value_attributes' in node:
+    declared = [k for k in ELEMENT_DECLARATIONS if k in node]
+    if len(declared) > 1:
         problems.append(
-            f"{where}: declares both 'attributes' and 'value_attributes'; a node either "
-            'names its legal keys or accepts any key, not both'
+            f'{where}: declares {" and ".join(repr(k) for k in declared)}; a node describes '
+            'what is under it exactly one way, so all but one are ignored'
         )
-    if 'value_attributes' in node and typ not in (None, 'dict'):
+
+    for key in ('value_attributes', 'value_type'):
+        if key in node and typ not in (None, 'dict', 'list'):
+            problems.append(
+                f"{where}: '{key}' describes the elements of a mapping or a list, "
+                f"and this attribute is '{typ}'; it is not applied"
+            )
+
+    if 'value_type' in node and node['value_type'] not in KNOWN_VALUE_TYPES:
         problems.append(
-            f"{where}: 'value_attributes' describes the values of a mapping, "
-            f"and this attribute is '{typ}'; it is not applied"
+            f"{where}: unrecognized value_type '{node['value_type']}'"
+            f'{_suggest(node["value_type"], KNOWN_VALUE_TYPES, _TYPE_ALIASES)}; '
+            'the elements are left unvalidated'
         )
-    if 'key_text' in node and 'value_attributes' not in node:
-        problems.append(
-            f"{where}: 'key_text' documents the free-form keys of a mapping declared with "
-            "'value_attributes', which this attribute does not declare; it is ignored"
-        )
+
+    if 'key_text' in node:
+        if not any(k in node for k in ('value_attributes', 'value_type')):
+            problems.append(
+                f"{where}: 'key_text' documents the free-form keys of a mapping declared with "
+                "'value_attributes' or 'value_type', neither of which this attribute "
+                'declares; it is ignored'
+            )
+        elif typ == 'list':
+            problems.append(
+                f"{where}: 'key_text' documents free-form keys, but a list's elements are "
+                'positional and have no keys; it is ignored'
+            )
 
     if 'list_defaults' in node:
         mode = node['list_defaults']

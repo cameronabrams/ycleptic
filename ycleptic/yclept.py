@@ -174,12 +174,15 @@ class Yclept(UserDict):
         end = H.end
         H.write_func(f'\n{item["name"]}:{end}')
         H.write_func(f'    {textwrap.fill(item["text"], subsequent_indent="      ")}{end}')
-        if 'value_attributes' in item:
-            H.write_func(
-                f'    Keyed by names you choose; every value takes the attributes below.{end}'
-            )
-            if 'key_text' in item:
-                H.write_func(f'    key: {item["key_text"]}{end}')
+        if 'value_attributes' in item or 'value_type' in item:
+            vt = item.get('value_type')
+            what = f'is a {vt}' if vt else 'takes the attributes below'
+            if item['type'] == 'list':
+                H.write_func(f'    A list; every item {what}.{end}')
+            else:
+                H.write_func(f'    Keyed by names you choose; every value {what}.{end}')
+                if 'key_text' in item:
+                    H.write_func(f'    key: {item["key_text"]}{end}')
         if item['type'] != 'dict':
             if 'default' in item:
                 H.write_func(f'    default: {item["default"]}{end}')

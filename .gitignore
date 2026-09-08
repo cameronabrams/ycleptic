@@ -91,6 +91,7 @@ tests/test_set/freekey_mut.yaml
 tests/test_set/vt_base.yaml
 tests/test_set/reclist_base.yaml
 tests/test_set/reclist_mut.yaml
+tests/test_set/alias_base.yaml
 tests/test_set/listmode_base.yaml
 tests/test_set/both_base.yaml
 tests/test_set/type_base.yaml

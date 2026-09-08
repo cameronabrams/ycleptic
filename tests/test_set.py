@@ -1047,6 +1047,75 @@ attributes:
             Y.make_default_specs('not_a_real_attribute')
 
     # ------------------------------------------------------------------
+    # Defaults are handed out as copies, never as the schema's own objects
+    # ------------------------------------------------------------------
+
+    def _write_alias_base(self, name='alias_base.yaml'):
+        spec = {
+            'attributes': [
+                {
+                    'name': 'opts',
+                    'type': 'dict',
+                    'text': 'a bare dict with a default',
+                    'default': {'cores': 4},
+                },
+                {
+                    'name': 'files',
+                    'type': 'list',
+                    'text': 'a plain list with a default',
+                    'default': ['a.dat', 'b.dat'],
+                },
+            ]
+        }
+        with open(name, 'w') as f:
+            yaml.dump(spec, f)
+        return name
+
+    def test_loading_a_config_does_not_rewrite_the_schema(self):
+        """special_update writes into its first argument; it must not be the spec's."""
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={'opts': {'threads': 8}})
+        self.assertEqual(Y['user']['opts'], {'cores': 4, 'threads': 8})
+        self.assertEqual(Y['base']['attributes'][0]['default'], {'cores': 4})
+
+    def test_absent_list_default_is_not_handed_out_by_reference(self):
+        """Consumer code mutating its own config must not grow the schema's default."""
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={})
+        self.assertIsNot(Y['user']['files'], Y['base']['attributes'][1]['default'])
+        Y['user']['files'].append('c.dat')
+        self.assertEqual(Y['base']['attributes'][1]['default'], ['a.dat', 'b.dat'])
+
+    def test_absent_dict_default_is_not_handed_out_by_reference(self):
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={})
+        self.assertIsNot(Y['user']['opts'], Y['base']['attributes'][0]['default'])
+        Y['user']['opts']['scratch'] = True
+        self.assertEqual(Y['base']['attributes'][0]['default'], {'cores': 4})
+
+    def test_make_default_specs_reports_the_schema_not_the_user(self):
+        """The method's whole job is to answer what the defaults are."""
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={'opts': {'threads': 8}})
+        self.assertEqual(Y.make_default_specs('opts'), {'opts': {'cores': 4}})
+
+    def test_make_default_specs_result_is_safe_to_mutate(self):
+        base = self._write_alias_base()
+        Y = Yclept(base)
+        got = Y.make_default_specs('files')
+        got['files'].append('MUTATED')
+        self.assertEqual(Y['base']['attributes'][1]['default'], ['a.dat', 'b.dat'])
+
+    def test_repeated_update_user_does_not_accumulate_in_the_schema(self):
+        base = self._write_alias_base()
+        Y = Yclept(base, userdict={'opts': {'threads': 8}})
+        Y.update_user({'opts': {'debug': True}})
+        self.assertEqual(Y['base']['attributes'][0]['default'], {'cores': 4})
+        # update_user's dict.update replaces 'opts' wholesale, so 'threads' is gone;
+        # it used to survive only because the schema had been polluted with it
+        self.assertEqual(Y['user']['opts'], {'cores': 4, 'debug': True})
+
+    # ------------------------------------------------------------------
     # Utility function tests
     # ------------------------------------------------------------------
 

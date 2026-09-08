@@ -152,6 +152,12 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
                 f"{where}: 'list_defaults' applies only to 'list' attributes, "
                 f"and this one is '{typ}'; it is ignored"
             )
+        elif 'attributes' in node:
+            problems.append(
+                f"{where}: 'list_defaults' governs how a plain list's 'default' merges with "
+                "the user's, but this list declares 'attributes', so its items are walked as "
+                'an ordered sequence of tasks and no default list is ever merged; it is ignored'
+            )
         elif mode not in KNOWN_LIST_DEFAULTS:
             problems.append(
                 f"{where}: unrecognized list_defaults '{mode}'"

@@ -735,14 +735,55 @@ attributes:
             '      - {name: color, type: str, text: c, options: [red]}\n'
         )
         problems = check_base_spec(base)
-        self.assertTrue(any("things->[*]->color" in p for p in problems))
+        self.assertTrue(any('things->[*]->color' in p for p in problems))
 
     def test_spec_check_flags_key_text_without_value_attributes(self):
-        base = yaml.safe_load(
-            'attributes:\n  - {name: x, type: dict, text: t, key_text: stray}\n'
-        )
+        base = yaml.safe_load('attributes:\n  - {name: x, type: dict, text: t, key_text: stray}\n')
         problems = check_base_spec(base)
         self.assertTrue(any("'key_text'" in p for p in problems))
+
+    def test_free_key_defaults_do_not_mutate_the_base_spec(self):
+        """Filling per-value defaults must not write back into the schema."""
+        spec = {
+            'attributes': [
+                {
+                    'name': 'things',
+                    'type': 'dict',
+                    'text': 'free-key with a non-empty default',
+                    'value_attributes': [
+                        {'name': 'size', 'type': 'int', 'text': 'size', 'default': 7}
+                    ],
+                    'default': {'preset': {}},
+                }
+            ]
+        }
+        with open('freekey_mut.yaml', 'w') as f:
+            yaml.dump(spec, f)
+        Y = Yclept('freekey_mut.yaml', userdict={})
+        self.assertEqual(Y['user']['things'], {'preset': {'size': 7}})
+        # the schema still says what the file said
+        self.assertEqual(Y['base']['attributes'][0]['default'], {'preset': {}})
+
+    def test_free_key_user_values_do_not_mutate_the_base_spec(self):
+        """A user's entries must not be merged into the schema's default."""
+        spec = {
+            'attributes': [
+                {
+                    'name': 'things',
+                    'type': 'dict',
+                    'text': 'free-key with a non-empty default',
+                    'value_attributes': [
+                        {'name': 'size', 'type': 'int', 'text': 'size', 'default': 7}
+                    ],
+                    'default': {'preset': {}},
+                }
+            ]
+        }
+        with open('freekey_mut.yaml', 'w') as f:
+            yaml.dump(spec, f)
+        Y = Yclept('freekey_mut.yaml', userdict={'things': {'mine': {'size': 3}}})
+        self.assertIn('mine', Y['user']['things'])
+        self.assertEqual(Y['base']['attributes'][0]['default'], {'preset': {}})
 
     # ------------------------------------------------------------------
     # list_defaults
@@ -795,6 +836,20 @@ attributes:
         )
         problems = check_base_spec(base)
         self.assertTrue(any("did you mean 'replace'?" in p for p in problems))
+
+    def test_spec_check_flags_list_defaults_on_a_task_list(self):
+        """A list with 'attributes' goes through lwalk, which never merges defaults."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: tasks\n'
+            '    type: list\n'
+            '    text: an ordered task list\n'
+            '    list_defaults: replace\n'
+            '    attributes:\n'
+            '      - {name: md, type: dict, text: a task}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('ordered sequence of tasks' in p for p in problems))
 
     def test_spec_check_flags_list_defaults_on_non_list(self):
         base = yaml.safe_load(

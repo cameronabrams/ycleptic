@@ -6,6 +6,7 @@ Recursive functions that traverse the attribute tree for setting values
 
 from __future__ import annotations
 import logging
+from copy import deepcopy
 
 from .dictthings import special_update
 from .stringthings import raise_clean
@@ -279,8 +280,10 @@ def dwalk(D: dict, I: dict):
                     dwalk(dx, I[d])
                 elif 'value_attributes' in dx:
                     # keys are the user's to invent, so none are conjured here;
-                    # any default mapping still gets its per-value defaults filled
-                    I[d] = dx.get('default', {})
+                    # any default mapping still gets its per-value defaults filled.
+                    # Copy first: _fwalk writes into this mapping, and the object
+                    # dx['default'] holds belongs to the base spec.
+                    I[d] = deepcopy(dx.get('default', {}))
                     _fwalk(dx, I[d], dname)
                 else:
                     I[d] = dx.get('default', {})
@@ -325,7 +328,9 @@ def dwalk(D: dict, I: dict):
                 if 'attributes' in dx:
                     dwalk(dx, I[d])
                 elif 'value_attributes' in dx:
-                    I[d] = special_update(dx.get('default', {}), I[d])
+                    # special_update writes into its first argument, so the base
+                    # spec's default must not be passed in directly
+                    I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
                     _fwalk(dx, I[d], dname)
                 else:
                     I[d] = special_update(dx.get('default', {}), I[d])

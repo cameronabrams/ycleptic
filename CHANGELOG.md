@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-09-08
+
 ### Fixed
 - `required: True` now binds on a `list` and on a `dict` with no subattributes. It previously had no effect on either: an omitted attribute was quietly filled with an empty list or mapping and no error was raised, so only scalar attributes enforced it. A schema declaring `required` on such an attribute was left with a declaration that did nothing, which is the failure `check-spec` exists to surface — the fix is to honor the declaration rather than to warn that it is inert
 

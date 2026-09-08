@@ -269,6 +269,7 @@ base|attribute_1
 attribute_1_1:
     This is a description of Attribute 1.1
     default: [1, 2, 3]
+    A list you supply is added after this default.
 
 All subattributes at the same level as 'attribute_1_1':
 
@@ -604,6 +605,203 @@ attributes:
         self.assertIsInstance(Y['user']['coords'], tuple)
         with self.assertRaises(YclepticError):
             Yclept('type_base.yaml', userdict={'coords': 5})
+
+    # ------------------------------------------------------------------
+    # Free-key mapping nodes (value_attributes)
+    # ------------------------------------------------------------------
+
+    def _write_freekey_base(self, name='freekey_base.yaml', **extra):
+        spec = {
+            'attributes': [
+                {
+                    'name': 'constituents',
+                    'type': 'dict',
+                    'text': 'constituents keyed by molecule name',
+                    'key_text': 'a molecule name',
+                    'value_attributes': [
+                        {'name': 'smiles', 'type': 'str', 'text': 'SMILES', 'required': True},
+                        {'name': 'count', 'type': 'int', 'text': 'how many', 'default': 100},
+                    ],
+                }
+            ]
+        }
+        spec['attributes'][0].update(extra)
+        with open(name, 'w') as f:
+            yaml.dump(spec, f)
+        return name
+
+    def test_free_keys_accepts_user_chosen_keys(self):
+        """Keys under a value_attributes node are the user's own and are not checked."""
+        base = self._write_freekey_base()
+        Y = Yclept(base, userdict={'constituents': {'STY': {'smiles': 'C=Cc1ccccc1'}}})
+        self.assertIn('STY', Y['user']['constituents'])
+
+    def test_free_key_values_get_their_defaults(self):
+        """Defaults declared in value_attributes are filled in for every value."""
+        base = self._write_freekey_base()
+        Y = Yclept(
+            base,
+            userdict={
+                'constituents': {
+                    'STY': {'smiles': 'C=Cc1ccccc1'},
+                    'GMA': {'smiles': 'CC(=C)C(=O)OCC1CO1', 'count': 50},
+                }
+            },
+        )
+        self.assertEqual(Y['user']['constituents']['STY']['count'], 100)
+        self.assertEqual(Y['user']['constituents']['GMA']['count'], 50)
+
+    def test_free_key_value_rejects_unknown_attribute(self):
+        """A typo *inside* a value is still caught, and the message names the entry."""
+        base = self._write_freekey_base()
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'constituents': {'STY': {'smiles': 'C', 'tpyo': 1}}})
+        self.assertIn('constituents[STY]', str(cm.exception))
+        self.assertIn('smiles', str(cm.exception))
+
+    def test_free_key_value_enforces_required_and_type(self):
+        base = self._write_freekey_base()
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={'constituents': {'STY': {'count': 5}}})
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={'constituents': {'STY': {'smiles': 'C', 'count': 'many'}}})
+
+    def test_free_key_value_must_be_a_mapping(self):
+        base = self._write_freekey_base()
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'constituents': {'STY': 'not-a-mapping'}})
+        self.assertIn("Entry 'STY'", str(cm.exception))
+
+    def test_free_key_node_absent_yields_empty_mapping(self):
+        """No keys are invented for a section the user omitted."""
+        base = self._write_freekey_base()
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['constituents'], {})
+
+    def test_free_key_node_is_a_branch_in_help(self):
+        """A free-key node must not be shown as a leaf, or its values go undocumented."""
+        base = self._write_freekey_base()
+        Y = Yclept(base)
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help([])
+        with open('console-out.txt', 'r') as f:
+            self.assertIn('constituents ->', f.read())
+        with open('console-out.txt', 'w') as f:
+            with redirect_stdout(f):
+                Y.console_help(['constituents'])
+        with open('console-out.txt', 'r') as f:
+            out = f.read()
+        self.assertIn('a molecule name', out)
+        self.assertIn('smiles', out)
+
+    def test_spec_check_flags_attributes_and_value_attributes_together(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: both\n'
+            '    type: dict\n'
+            '    text: contradictory\n'
+            '    attributes:\n'
+            '      - {name: a, type: str, text: a}\n'
+            '    value_attributes:\n'
+            '      - {name: b, type: str, text: b}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('declares both' in p for p in problems))
+
+    def test_both_child_declarations_raise_at_load(self):
+        with open('both_base.yaml', 'w') as f:
+            f.write(
+                'attributes:\n'
+                '  - name: both\n'
+                '    type: dict\n'
+                '    text: contradictory\n'
+                '    attributes:\n'
+                '      - {name: a, type: str, text: a, default: x}\n'
+                '    value_attributes:\n'
+                '      - {name: b, type: str, text: b}\n'
+            )
+        with self.assertRaises(YclepticError):
+            Yclept('both_base.yaml', userdict={})
+
+    def test_spec_check_recurses_into_value_attributes(self):
+        """A typo in a value schema is reported, with '[*]' marking the free key."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: things\n'
+            '    type: dict\n'
+            '    text: things\n'
+            '    value_attributes:\n'
+            '      - {name: color, type: str, text: c, options: [red]}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("things->[*]->color" in p for p in problems))
+
+    def test_spec_check_flags_key_text_without_value_attributes(self):
+        base = yaml.safe_load(
+            'attributes:\n  - {name: x, type: dict, text: t, key_text: stray}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("'key_text'" in p for p in problems))
+
+    # ------------------------------------------------------------------
+    # list_defaults
+    # ------------------------------------------------------------------
+
+    def _write_list_base(self, mode=None, name='listmode_base.yaml'):
+        node = {
+            'name': 'ladder',
+            'type': 'list',
+            'text': 'the equilibration ladder',
+            'default': ['min', 'nvt', 'npt'],
+        }
+        if mode is not None:
+            node['list_defaults'] = mode
+        with open(name, 'w') as f:
+            yaml.dump({'attributes': [node]}, f)
+        return name
+
+    def test_list_defaults_append_is_the_default(self):
+        """Historical behavior is preserved for schemas that declare nothing."""
+        base = self._write_list_base()
+        Y = Yclept(base, userdict={'ladder': ['nvt']})
+        self.assertEqual(Y['user']['ladder'], ['min', 'nvt', 'npt', 'nvt'])
+
+    def test_list_defaults_replace_honors_the_user_list(self):
+        base = self._write_list_base(mode='replace')
+        Y = Yclept(base, userdict={'ladder': ['nvt']})
+        self.assertEqual(Y['user']['ladder'], ['nvt'])
+
+    def test_list_defaults_replace_still_supplies_default_when_absent(self):
+        base = self._write_list_base(mode='replace')
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['ladder'], ['min', 'nvt', 'npt'])
+
+    def test_list_defaults_explicit_append_matches_the_default(self):
+        base = self._write_list_base(mode='append')
+        Y = Yclept(base, userdict={'ladder': ['nvt']})
+        self.assertEqual(Y['user']['ladder'], ['min', 'nvt', 'npt', 'nvt'])
+
+    def test_list_defaults_unrecognized_mode_raises(self):
+        base = self._write_list_base(mode='overwrite')
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={'ladder': ['nvt']})
+        self.assertIn('list_defaults', str(cm.exception))
+
+    def test_spec_check_flags_bad_list_defaults(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - {name: l, type: list, text: t, default: [a], list_defaults: overwrite}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("did you mean 'replace'?" in p for p in problems))
+
+    def test_spec_check_flags_list_defaults_on_non_list(self):
+        base = yaml.safe_load(
+            'attributes:\n  - {name: s, type: str, text: t, list_defaults: replace}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("applies only to 'list'" in p for p in problems))
 
     # ------------------------------------------------------------------
     # make_default_specs

@@ -106,6 +106,26 @@ def _scalar_type_ok(typ: str, value) -> bool:
     return True
 
 
+def subattributes(node: dict) -> list[dict] | None:
+    """
+    Return the attribute specs describing what lives *under* ``node``.
+
+    A node declares its children in one of two mutually exclusive ways:
+    ``attributes`` names the legal keys, while ``value_attributes`` says the
+    keys are the user's to choose and gives the schema every value must
+    satisfy.  Returns ``None`` for a leaf, which has neither.
+
+    Callers that only need to know "is this a branch?" should use this rather
+    than testing for ``attributes`` directly, so free-key nodes are not
+    mistaken for leaves.
+    """
+    if 'attributes' in node:
+        return node['attributes']
+    if 'value_attributes' in node:
+        return node['value_attributes']
+    return None
+
+
 def _declared_type(dx: dict, dname: str) -> str:
     """
     Return the declared type of attribute spec ``dx``, or report its absence.
@@ -117,6 +137,68 @@ def _declared_type(dx: dict, dname: str) -> str:
     if typ is None:
         raise_clean(ValueError(f"Attribute '{dx.get('name', '?')}' of '{dname}' declares no type."))
     return typ
+
+
+LIST_DEFAULTS_MODES = ('append', 'replace')
+"""Legal values of a list attribute's ``list_defaults`` key."""
+
+
+def _list_defaults_mode(dx: dict, dname: str) -> str:
+    """
+    Return the ``list_defaults`` mode of list attribute spec ``dx``.
+
+    Defaults to ``'append'``, which is ycleptic's historical behavior: a
+    declared default list is prepended to whatever the user supplies.  A schema
+    whose list defaults are meant to be *superseded* by the user rather than
+    added to declares ``list_defaults: replace``.
+    """
+    mode = dx.get('list_defaults', 'append')
+    if mode not in LIST_DEFAULTS_MODES:
+        raise_clean(
+            ValueError(
+                f"Attribute '{dx.get('name', '?')}' of '{dname}' declares "
+                f'list_defaults: {mode!r}; expected one of {", ".join(LIST_DEFAULTS_MODES)}.'
+            )
+        )
+    return mode
+
+
+def _fwalk(dx: dict, M: dict, dname: str):
+    """
+    Validate every value of a free-key mapping ``M`` against ``dx``'s
+    ``value_attributes``.
+
+    The keys of ``M`` are the user's own --- molecule names, reaction labels
+    and the like --- so they are not checked against anything.  Each value is
+    walked as if it were an ordinary attribute block, which fills in per-value
+    defaults and rejects unknown keys *within* a value.
+
+    Parameters
+    ----------
+    dx : dict
+        The free-key attribute spec; must carry ``value_attributes``.
+    M : dict
+        The user's mapping.
+    dname : str
+        Name of the enclosing block, used in error messages.
+    """
+    name = dx.get('name', '?')
+    if not isinstance(M, dict):
+        raise_clean(
+            ValueError(f"Attribute '{name}' of '{dname}' must be a mapping; found {type(M)}.")
+        )
+    spec = {'name': name, 'attributes': dx['value_attributes']}
+    for key in list(M.keys()):
+        if M[key] is None:
+            M[key] = {}
+        if not isinstance(M[key], dict):
+            raise_clean(
+                ValueError(
+                    f"Entry '{key}' of '{name}' must be a mapping of its attributes; "
+                    f'found value {M[key]!r} of type {type(M[key]).__name__}.'
+                )
+            )
+        dwalk({**spec, 'name': f'{name}[{key}]'}, M[key])
 
 
 def dwalk(D: dict, I: dict):
@@ -157,6 +239,14 @@ def dwalk(D: dict, I: dict):
         # logger.debug(f' d {d}')
         # get its type
         typ = _declared_type(dx, dname)
+        if 'attributes' in dx and 'value_attributes' in dx:
+            raise_clean(
+                ValueError(
+                    f"Attribute '{d}' of '{dname}' declares both 'attributes' and "
+                    "'value_attributes'; a node either names its keys or accepts any key, "
+                    'not both.'
+                )
+            )
         if typ == 'dict' and (d in I and not isinstance(I[d], dict)):
             raise_clean(
                 ValueError(f"Attribute '{d}' of '{dname}' must be a dict; found {type(I[d])}.")
@@ -187,6 +277,11 @@ def dwalk(D: dict, I: dict):
                 if 'attributes' in dx:
                     I[d] = {}
                     dwalk(dx, I[d])
+                elif 'value_attributes' in dx:
+                    # keys are the user's to invent, so none are conjured here;
+                    # any default mapping still gets its per-value defaults filled
+                    I[d] = dx.get('default', {})
+                    _fwalk(dx, I[d], dname)
                 else:
                     I[d] = dx.get('default', {})
             elif typ == 'list':
@@ -229,6 +324,9 @@ def dwalk(D: dict, I: dict):
                 # process descendants
                 if 'attributes' in dx:
                     dwalk(dx, I[d])
+                elif 'value_attributes' in dx:
+                    I[d] = special_update(dx.get('default', {}), I[d])
+                    _fwalk(dx, I[d], dname)
                 else:
                     I[d] = special_update(dx.get('default', {}), I[d])
             elif typ == 'list':
@@ -236,8 +334,12 @@ def dwalk(D: dict, I: dict):
                 if 'attributes' in dx:
                     lwalk(dx, I[d])
                 else:
-                    defaults = dx.get('default', [])
-                    I[d] = defaults + I[d]
+                    # 'append' (the default) prepends the schema's default list to
+                    # the user's; 'replace' honors the user's list verbatim, the
+                    # default then applying only when the key is absent altogether
+                    if _list_defaults_mode(dx, dname) == 'append':
+                        defaults = dx.get('default', [])
+                        I[d] = defaults + I[d]
             elif typ == 'tuple':
                 if 'attributes' in dx:
                     raise_clean(

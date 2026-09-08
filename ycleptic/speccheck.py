@@ -25,6 +25,9 @@ KNOWN_ATTRIBUTE_KEYS = frozenset(
         'choices',
         'case_sensitive',
         'attributes',
+        'value_attributes',
+        'key_text',
+        'list_defaults',
         'docs',
     }
 )
@@ -38,6 +41,9 @@ KNOWN_TOP_KEYS = frozenset({'attributes', 'docs'})
 #: Type names ycleptic recognizes.
 KNOWN_TYPES = frozenset({'str', 'int', 'float', 'bool', 'tuple', 'list', 'dict'})
 
+#: Legal values of a list attribute's ``list_defaults`` key.
+KNOWN_LIST_DEFAULTS = frozenset({'append', 'replace'})
+
 # Misspellings common enough to name outright rather than leave to difflib.
 _KEY_ALIASES = {
     'option': 'choices',
@@ -48,6 +54,22 @@ _KEY_ALIASES = {
     'description': 'text',
     'help': 'text',
     'subattributes': 'attributes',
+    'value': 'value_attributes',
+    'values': 'value_attributes',
+    'value_attribute': 'value_attributes',
+    'additionalproperties': 'value_attributes',
+    'key_help': 'key_text',
+    'key_description': 'key_text',
+}
+
+_LIST_DEFAULTS_ALIASES = {
+    'add': 'append',
+    'concat': 'append',
+    'concatenate': 'append',
+    'extend': 'append',
+    'overwrite': 'replace',
+    'override': 'replace',
+    'supersede': 'replace',
 }
 
 _TYPE_ALIASES = {
@@ -107,6 +129,36 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
             f"and this one is '{typ}'; the allowed values are not applied"
         )
 
+    if 'attributes' in node and 'value_attributes' in node:
+        problems.append(
+            f"{where}: declares both 'attributes' and 'value_attributes'; a node either "
+            'names its legal keys or accepts any key, not both'
+        )
+    if 'value_attributes' in node and typ not in (None, 'dict'):
+        problems.append(
+            f"{where}: 'value_attributes' describes the values of a mapping, "
+            f"and this attribute is '{typ}'; it is not applied"
+        )
+    if 'key_text' in node and 'value_attributes' not in node:
+        problems.append(
+            f"{where}: 'key_text' documents the free-form keys of a mapping declared with "
+            "'value_attributes', which this attribute does not declare; it is ignored"
+        )
+
+    if 'list_defaults' in node:
+        mode = node['list_defaults']
+        if typ != 'list':
+            problems.append(
+                f"{where}: 'list_defaults' applies only to 'list' attributes, "
+                f"and this one is '{typ}'; it is ignored"
+            )
+        elif mode not in KNOWN_LIST_DEFAULTS:
+            problems.append(
+                f"{where}: unrecognized list_defaults '{mode}'"
+                f'{_suggest(mode, KNOWN_LIST_DEFAULTS, _LIST_DEFAULTS_ALIASES)}; '
+                'the default is added to the user list, not replaced by it'
+            )
+
     docs = node.get('docs')
     if isinstance(docs, dict):
         for key in docs:
@@ -119,6 +171,12 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
     for sub in node.get('attributes', []) or []:
         if isinstance(sub, dict):
             _check_node(sub, path + [str(sub.get('name', '?'))], problems)
+
+    # A free-key node's value schema is ordinary attribute specs, so it gets the
+    # same scrutiny; '[*]' in the path marks the step through an arbitrary key.
+    for sub in node.get('value_attributes', []) or []:
+        if isinstance(sub, dict):
+            _check_node(sub, path + ['[*]', str(sub.get('name', '?'))], problems)
 
 
 def check_base_spec(base: dict) -> list[str]:

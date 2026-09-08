@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- `required: True` now binds on a `list` and on a `dict` with no subattributes. It previously had no effect on either: an omitted attribute was quietly filled with an empty list or mapping and no error was raised, so only scalar attributes enforced it. A schema declaring `required` on such an attribute was left with a declaration that did nothing, which is the failure `check-spec` exists to surface — the fix is to honor the declaration rather than to warn that it is inert
+
+  `required` binds only where nothing else supplies the value: a declared `default` satisfies it, as it already did for scalars, and a `dict` declaring `attributes` is synthesized from its children, whose own `required` flags then apply. A `list` has no such route — `attributes` there names the kinds of item that may appear, and an empty list contains none of them — nor does a mapping declared with `value_attributes` or `value_type`, whose keys are the user's to invent
+
+  **This can reject a user config that was previously accepted**, which is the point, but check schemas that declare `required` on a list or a childless dict without a default. Reported by htpolynet, whose negative test for exactly this passed when it should have failed
+
 ## [2.4.0] - 2026-09-08
 
 ### Added

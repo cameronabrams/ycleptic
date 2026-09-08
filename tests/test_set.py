@@ -1124,6 +1124,101 @@ attributes:
         self.assertEqual(Y['user']['opts'], {'cores': 4, 'threads': 8})
 
     # ------------------------------------------------------------------
+    # required on containers
+    # ------------------------------------------------------------------
+
+    def _write_required_base(self, node, name='required_base.yaml'):
+        with open(name, 'w') as f:
+            yaml.dump({'attributes': [node]}, f)
+        return name
+
+    def test_required_list_with_nothing_to_fill_it_raises(self):
+        """A required list used to be silently satisfied with []."""
+        base = self._write_required_base(
+            {'name': 'a', 'type': 'list', 'text': 'a required list', 'required': True}
+        )
+        with self.assertRaises(YclepticError) as cm:
+            Yclept(base, userdict={})
+        self.assertIn('requires a value', str(cm.exception))
+
+    def test_required_childless_dict_with_nothing_to_fill_it_raises(self):
+        base = self._write_required_base(
+            {'name': 'a', 'type': 'dict', 'text': 'a required bare dict', 'required': True}
+        )
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={})
+
+    def test_required_container_with_a_default_uses_it(self):
+        """A default supplies the value, exactly as it does for a scalar."""
+        base = self._write_required_base(
+            {
+                'name': 'a',
+                'type': 'list',
+                'text': 'a required list with a default',
+                'required': True,
+                'default': ['x'],
+            }
+        )
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['a'], ['x'])
+
+    def test_required_dict_with_attributes_is_synthesized_not_refused(self):
+        """Its children supply the block, and their own required flags then apply."""
+        base = self._write_required_base(
+            {
+                'name': 'a',
+                'type': 'dict',
+                'text': 'a required block',
+                'required': True,
+                'attributes': [{'name': 'n', 'type': 'int', 'text': 'n', 'default': 1}],
+            }
+        )
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['a'], {'n': 1})
+
+    def test_required_false_container_is_still_skipped(self):
+        base = self._write_required_base(
+            {'name': 'a', 'type': 'list', 'text': 'opt-out', 'required': False}
+        )
+        Y = Yclept(base, userdict={})
+        self.assertNotIn('a', Y['user'])
+
+    def test_required_free_key_mapping_raises_when_absent(self):
+        """Keys are the user's to invent, so nothing can synthesize the mapping."""
+        base = self._write_required_base(
+            {
+                'name': 'a',
+                'type': 'dict',
+                'text': 'a required free-key mapping',
+                'required': True,
+                'value_attributes': [{'name': 'x', 'type': 'str', 'text': 'x'}],
+            }
+        )
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={})
+
+    def test_required_tagged_task_list_raises_when_absent(self):
+        """'attributes' on a list names possible items; an empty list holds none."""
+        base = self._write_required_base(
+            {
+                'name': 'a',
+                'type': 'list',
+                'text': 'a required task list',
+                'required': True,
+                'attributes': [{'name': 'md', 'type': 'dict', 'text': 'a task'}],
+            }
+        )
+        with self.assertRaises(YclepticError):
+            Yclept(base, userdict={})
+
+    def test_required_container_satisfied_by_the_user_does_not_raise(self):
+        base = self._write_required_base(
+            {'name': 'a', 'type': 'list', 'text': 'a required list', 'required': True}
+        )
+        Y = Yclept(base, userdict={'a': ['given']})
+        self.assertEqual(Y['user']['a'], ['given'])
+
+    # ------------------------------------------------------------------
     # Utility function tests
     # ------------------------------------------------------------------
 

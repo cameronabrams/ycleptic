@@ -204,6 +204,22 @@ def _element_spec(dx: dict) -> dict:
     return {'name': dx.get('name', '?'), 'attributes': dx['value_attributes']}
 
 
+def _require_absent(dx: dict, d: str, dname: str, can_synthesize: bool):
+    """
+    Report an absent ``required`` container that nothing can fill.
+
+    ``required`` means the user must supply a value, so it binds only when
+    there is nothing else to supply one.  A declared ``default`` supplies it,
+    exactly as for a scalar, where the default branch is tried before the
+    required branch.  A ``dict`` declaring ``attributes`` supplies it too: the
+    block is synthesized from its children, whose own ``required`` flags then
+    apply in turn.  A list has no such route --- ``attributes`` there names the
+    kinds of item that may appear, and an empty list contains none of them.
+    """
+    if dx.get('required') and 'default' not in dx and not can_synthesize:
+        raise_clean(ValueError(f"Attribute '{d}' of '{dname}' requires a value."))
+
+
 def _fwalk(dx: dict, M: dict, dname: str):
     """
     Validate every value of a free-key mapping ``M`` against ``dx``'s
@@ -372,6 +388,7 @@ def dwalk(D: dict, I: dict):
                 if 'required' in dx:
                     if not dx['required']:
                         continue
+                _require_absent(dx, d, dname, can_synthesize='attributes' in dx)
                 # whether required or not, set it as empty and continue the walk,
                 # which will set defaults for all descendants
                 if 'attributes' in dx:
@@ -390,6 +407,7 @@ def dwalk(D: dict, I: dict):
                 if 'required' in dx:
                     if not dx['required']:
                         continue
+                _require_absent(dx, d, dname, can_synthesize=False)
                 if 'value_attributes' in dx or 'value_type' in dx:
                     I[d] = deepcopy(dx.get('default', []))
                     _rwalk(dx, I[d], dname)

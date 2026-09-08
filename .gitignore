@@ -107,6 +107,11 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
+# uv
+#   ycleptic is a library, not an application, so its resolved dependency set
+#   is not pinned in the repo; `uv run` regenerates uv.lock on demand.
+uv.lock
+
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 

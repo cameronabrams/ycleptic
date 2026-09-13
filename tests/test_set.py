@@ -430,6 +430,22 @@ base|attribute_2->attribute_2a
             warnings.simplefilter('error', YclepticSpecWarning)
             Yclept(BFILE, strict_spec=True)
 
+    def test_cli_parser_builds_on_this_python(self):
+        """The whole parser is built before any subcommand runs, so a bad
+        add_argument breaks every subcommand.  Python 3.14 removed the
+        ``type`` keyword from BooleanOptionalAction, which did exactly that."""
+        import subprocess
+        import sys
+
+        for argv in (['--help'], ['config-help', '--help'], ['check-spec', '--help']):
+            r = subprocess.run(
+                [sys.executable, '-c', 'import sys; from ycleptic.cli import cli; sys.exit(cli())']
+                + argv,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(r.returncode, 0, f'{argv}: {r.stderr[-400:]}')
+
     def test_check_spec_cli_reports_and_exits_nonzero(self):
         """The check-spec subcommand gates CI on a clean base spec."""
         from argparse import Namespace

@@ -120,14 +120,12 @@ def cli():
     )
     command_parsers['config-help'].add_argument(
         '--i',
-        type=bool,
         default=True,
         action=ap.BooleanOptionalAction,
         help='use help interactively',
     )
     command_parsers['config-help'].add_argument(
         '--exit-at-end',
-        type=bool,
         default=True,
         action=ap.BooleanOptionalAction,
         help='exit after help',

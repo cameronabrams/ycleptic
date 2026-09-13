@@ -118,7 +118,7 @@ repo tried to test against an unreleased branch.
 
 ## Working commands
 
-    uv run --extra test pytest tests -q      # 52 tests, <1s. NOT tests/unit
+    uv run --extra test pytest tests -q      # ~105 tests, ~1s. NOT tests/unit
     uv run --extra lint ruff check ycleptic/
     uv run --extra lint ruff format --check ycleptic/
     uv run --extra lint mypy ycleptic/
@@ -129,7 +129,7 @@ read and write fixture files by bare filename; several test outputs there are
 gitignored. `tests/test_set/test_package/` is a miniature installable package
 used to exercise `make-doc` against a realistic app layout.
 
-CI (`.github/workflows/ci.yaml`) runs pytest on Python 3.9–3.13 plus a lint job.
+CI (`.github/workflows/ci.yaml`) runs pytest on Python 3.9–3.14 plus a lint job.
 The floor is **3.9**, so no `match`, no PEP 604 unions at runtime — every module that
 needs a modern annotation carries `from __future__ import annotations` and
 relies on it.
@@ -143,6 +143,13 @@ commits, tags, and pushes. **Pushing the tag is what publishes to PyPI.** Never
 hand-roll any of those steps. Write the changelog entries under `[Unreleased]`
 as you go, not at release time.
 
-`pestifer` pins `ycleptic>=2.3.0` and is the only known downstream consumer —
-coordinate with it before a release that moves the floor, and keep the
-`ycleptic.src` deprecation shim until it is confirmed unused.
+Two downstream consumers, both in the same fleet: `pestifer` pins
+`ycleptic>=2.3.0`, and `htpolynet` (from 2.8.0) requires `ycleptic>=2.4.1` at
+runtime. Coordinate with them before a release that changes behavior they rely
+on, and keep the `ycleptic.src` deprecation shim until it is confirmed unused.
+
+A release is not finished when `release.sh` exits. Confirm PyPI actually serves
+the new version, and smoke-test the published wheel rather than the checkout.
+ycleptic is also headed for conda-forge (staged-recipes#34763); once a feedstock
+exists, the autotick-bot bump PR that follows each release is part of the
+release too.

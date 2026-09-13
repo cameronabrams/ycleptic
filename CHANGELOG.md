@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-09-13
+
 ### Fixed
 - The `yclept` command no longer crashes on Python 3.14. `config-help` declared its `--i` and `--exit-at-end` flags with `type=bool` alongside `action=BooleanOptionalAction`; that keyword was deprecated in Python 3.12 and removed in 3.14, and because the whole argument parser is built before any subcommand runs, every `yclept` subcommand — `make-doc` and `check-spec` included — failed at startup with a `TypeError`. The flags parse exactly as before. The library API was unaffected, which is why the test suite passed on 3.14 all along: it called functions directly and never ran the CLI. A test now builds the parser in a subprocess, and CI covers Python 3.14
 

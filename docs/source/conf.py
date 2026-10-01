@@ -38,7 +38,12 @@ templates_path = ['_templates']
 
 html_theme = 'furo'
 
+# The logo is line art, so it ships as two transparent variants rather than one
+# opaque image: black ink for the light theme, white ink for the dark one.  An
+# opaque logo would show as a white square in furo's dark mode.
 html_theme_options = {
+    'light_logo': 'ycleptic-logo-light.png',
+    'dark_logo': 'ycleptic-logo-dark.png',
     "light_css_variables": {
         "color-icon": "#000000"  # Black for light mode
     },
@@ -71,6 +76,12 @@ html_theme_options = {
         }
     ],
 }
+
+# The favicon is the exclamation point alone, on an opaque white disc: the whole
+# medallion is unreadable at 16 px, and transparent line art would vanish on a
+# light or dark tab bar depending on which variant was shipped.  16, 32 and 48 px
+# in one .ico.
+html_favicon = '_static/ycleptic-favicon.ico'
 
 html_static_path = ['_static']
 

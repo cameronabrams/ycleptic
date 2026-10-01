@@ -190,10 +190,21 @@ you asked for**, and each obvious proxy for that is insufficient:
   to stdout (the error goes to stderr). Two such empty strings compare equal,
   so `[ "$a" = "$b" ]` reports a match between two files that do not exist.
 - *the hash being stable across repeats* — that is a statement about the CDN,
-  not the file. Repeating the **same** failing request gave `x-cache: MISS`
-  then three `HIT`s with byte-identical 388-byte bodies: one cached error
-  re-read, not a reproduced download. A hash that comes out the same twice is
-  exactly what a *cached* 404 looks like.
+  not the file. A hash that comes out the same twice is exactly what a
+  *cached* 404 looks like. Polling one fresh key every 20 s:
+
+        t=0           MISS  age=0     202beb8b85c8
+        t=20..100     HIT   age=20..100  202beb8b85c8   (byte-identical)
+        t=120         MISS  age=0     0dfe40bb9abb      (entirely different)
+
+  So the error is cached for about **120 s**, and the window cannot be
+  calibrated against: these 404s carry no `cache-control`, no `expires` and no
+  `surrogate-control`, and the first cached response arrives with `age: 0`.
+  Nothing in the response tells you when a re-check would be meaningful. The
+  window also straddles the interval a person naturally re-checks at, which is
+  why two sessions measuring the same thing — one in a rapid burst, one minutes
+  apart — got "always identical" and "never identical" and were both right.
+  **Repeatability is unusable as evidence at any spacing.**
 - *HTTP status and byte count* — necessary, not sufficient. Measured
   2026-10-01, `https://pypi.org/project/<name>/` fetched from a script returns
   **HTTP 200, 3038 bytes** of a "Client Challenge" interstitial, and the body is

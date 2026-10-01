@@ -28,6 +28,29 @@ can gate a CI run:
    - name: Check the base config spec
      run: yclept check-spec mypackage/data/base.yaml
 
+.. tip::
+
+   If you gate on this from your own test suite rather than from CI, pair the
+   check with a **negative control** --- a test that re-introduces a known
+   mistake in memory and requires a complaint about it:
+
+   .. code-block:: python
+
+      def test_shipped_schema_is_clean():
+          assert check_base_spec(yaml.safe_load(open(SCHEMA))) == []
+
+      def test_the_checker_is_actually_running():
+          bad = yaml.safe_load(open(SCHEMA))
+          bad['attributes'].append('not-an-attribute')
+          assert check_base_spec(bad) != []
+
+   The first test alone proves very little. A dependency floor such as
+   ``ycleptic>=2.4.3`` is satisfied the moment the installed version is new
+   enough, so a clean schema passes against an *older* ycleptic that never ran
+   the check you are relying on --- and the suite stays green while the
+   guarantee is gone. The second test fails in that case, which is the point of
+   it.
+
 What it looks for
 -----------------
 

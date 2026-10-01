@@ -174,16 +174,26 @@ you asked for**, and each obvious proxy for that is insufficient:
 - *the hash looking wrong* — an empty body hashes to
   `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the
   SHA256 of the empty string, which is the **lucky** case because it is
-  recognisable. A 404 carrying an error page has no tell at all. Whether a 404
-  body is empty depends on the *path shape*, not the host: measured
-  2026-10-01, `/packages/source/<l>/<pkg>/<pkg>-<v>.tar.gz` returned 0 bytes on
-  `files.pythonhosted.org`, `pypi.org` and `pypi.io` alike, while the long
-  hashed `/packages/<a>/<b>/<digest>/...` form returned a few hundred bytes of
-  HTML — whose hash differed between two runs minutes apart. Never key on a
-  constant, and do not name a host.
+  recognisable. A 404 carrying an error body has no tell at all. Whether the
+  body is empty depends on the *path shape*, not the host — measured
+  2026-10-01:
+  - `/packages/source/<l>/<pkg>/<pkg>-<v>.tar.gz`, the form a conda recipe
+    uses, 404s at **0 bytes** from `files.pythonhosted.org`, `pypi.org` and
+    `pypi.io` alike, giving the recognisable constant;
+  - the direct `/packages/<a>/<b>/<digest>/<file>` form returns an S3
+    `NoSuchKey` XML body that echoes the key and carries a per-request
+    `RequestId` and `HostId`, so four never-requested keys gave 369, 389, 369
+    and 369 bytes and **four different hashes**.
+
+  Never key on a constant, and do not name a host.
 - *`curl -f`* — it leaves no file at all, so a later `sha256sum` prints nothing
   to stdout (the error goes to stderr). Two such empty strings compare equal,
   so `[ "$a" = "$b" ]` reports a match between two files that do not exist.
+- *the hash being stable across repeats* — that is a statement about the CDN,
+  not the file. Repeating the **same** failing request gave `x-cache: MISS`
+  then three `HIT`s with byte-identical 388-byte bodies: one cached error
+  re-read, not a reproduced download. A hash that comes out the same twice is
+  exactly what a *cached* 404 looks like.
 - *HTTP status and byte count* — necessary, not sufficient. Measured
   2026-10-01, `https://pypi.org/project/<name>/` fetched from a script returns
   **HTTP 200, 3038 bytes** of a "Client Challenge" interstitial, and the body is

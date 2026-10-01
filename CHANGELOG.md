@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.4.3] - 2026-10-01
+
 ### Added
 - `check-spec` and the load-time spec check now look at a base config's *shape*, not only its vocabulary. A base config can use nothing but recognized keys and type names and still describe the wrong thing, and nothing said so until now
   - an attribute indented one level too deep is swallowed into the previous attribute's `default:` list, where it declares nothing at all. This is valid YAML using only recognized keys, so it passed; meanwhile the attribute ceases to exist, a user config setting it is silently ignored, its defaults are never applied, and its neighbour gains a mapping among its values. Reported by pestifer, which lost a force-field conflict-resolution file this way with nothing in any log to say so. The test is narrow — a mapping carrying a `name` and a `type` naming one of ycleptic's own types — so ordinary data in a `default:` is left alone

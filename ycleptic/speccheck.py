@@ -341,6 +341,11 @@ def check_base_spec(base: dict) -> list[str]:
                 f'the top level: unrecognized key '
                 f"'{key}'{_suggest(key, KNOWN_TOP_KEYS, _KEY_ALIASES)}; it is ignored"
             )
+    # The top-level 'attributes' is an attribute list like any other, and gets the
+    # same element check: a non-attribute here is skipped by every walker exactly
+    # as it is further down, so it must not be the one place that goes unreported.
+    _check_element_list(base, 'attributes', 'the top level', problems)
+
     for node in base.get('attributes', []) or []:
         if isinstance(node, dict):
             _check_node(node, [str(node.get('name', '?'))], problems)

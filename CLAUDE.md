@@ -19,7 +19,9 @@ bug — interactive help showed allowed values, generated docs did not.
                       lwalk (a list of task-items), mwalk (merge an rc/dotfile
                       base into the app base), make_def (defaults for a subtree)
       speccheck.py    validates the base config *itself* — the recognized-key
-                      and recognized-type vocabulary lives here
+                      and recognized-type vocabulary lives here, and the
+                      structural checks (shape of `default`, of an
+                      `attributes:` list) beside it
       makedoc.py      base spec -> RST tree
       cli.py          `yclept` entry point: make-doc, config-help, check-spec
       errors.py       YclepticError, YclepticSpecWarning
@@ -43,7 +45,11 @@ stubs — a new module needs a new `api/ycleptic.<mod>.rst`.
    `yclept check-spec` exits nonzero so CI can gate on them.
 
 Because a base config is data, **an unrecognized key is not an error, it is a
-no-op** — that is the failure mode speccheck exists to surface. If you add a
+no-op** — that is the failure mode speccheck exists to surface. The same is
+true of a base config whose *shape* is wrong while its vocabulary is perfect:
+an attribute indented one level too deep lands in its neighbour's `default:`
+list and simply ceases to exist. speccheck reports that too; see
+`_check_default_shape` and `_check_element_list`. If you add a
 key or type name to the schema vocabulary, add it to `KNOWN_ATTRIBUTE_KEYS`,
 `KNOWN_DOCS_KEYS`, `KNOWN_TOP_KEYS`, or `KNOWN_TYPES` in `speccheck.py` in the
 same change, or `check-spec` will start reporting your own new feature as a

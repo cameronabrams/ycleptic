@@ -8,6 +8,12 @@ misspelled key or type name is therefore discarded without comment, leaving the
 schema author with a declaration that silently does nothing --- a
 ``choices:`` list that never constrains anything, for instance.  The checks
 here look over a base spec as it is loaded and report those declarations.
+
+Vocabulary is only half of it.  A base config can use nothing but recognized
+keys and types and still have the wrong *shape*: an attribute indented one
+level too deep is swallowed into its neighbour's ``default`` list, where it
+declares nothing at all, and a ``default`` can contradict the ``type`` beside
+it.  Those are checked here too, since neither announces itself at runtime.
 """
 
 from __future__ import annotations
@@ -115,6 +121,100 @@ def _path_str(path: list[str]) -> str:
     return '->'.join(path) if path else 'the top level'
 
 
+def _looks_like_an_attribute(value) -> bool:
+    """
+    Return True if ``value`` has the shape of an attribute specification.
+
+    Deliberately narrow: a mapping with a ``name`` *and* a ``type`` naming one of
+    ycleptic's own types.  Ordinary data happens to carry a ``name`` often enough,
+    but rarely alongside a ``type`` of exactly ``str``, ``int``, ``dict`` and so on.
+    """
+    return isinstance(value, dict) and 'name' in value and value.get('type') in KNOWN_TYPES
+
+
+def _check_element_list(node: dict, key: str, where: str, problems: list[str]):
+    """
+    Check that ``node[key]`` is a list whose every element is an attribute spec.
+
+    A non-dict element, or one with no ``name``, is skipped by every walker in
+    ycleptic, so whatever it was meant to declare simply does not exist.
+    """
+    subs = node.get(key)
+    if subs is None:
+        return
+    if not isinstance(subs, list):
+        problems.append(
+            f"{where}: '{key}' must be a list of attributes; "
+            f'found {type(subs).__name__}, so nothing under it is declared'
+        )
+        return
+    for i, sub in enumerate(subs):
+        if not isinstance(sub, dict):
+            problems.append(
+                f"{where}: item {i} of '{key}' is not an attribute "
+                f'({type(sub).__name__} {sub!r}); it is ignored'
+            )
+        elif 'name' not in sub:
+            problems.append(
+                f"{where}: item {i} of '{key}' has no 'name', so nothing can refer "
+                'to it; it is ignored'
+            )
+
+
+def _check_default_shape(node: dict, typ, where: str, problems: list[str]):
+    """
+    Report a ``default`` that cannot be what its ``type`` says, and one that has
+    swallowed what looks like a neighbouring attribute.
+
+    The swallow is an indentation slip: attribute entries and the items of a
+    ``default`` list sit at different depths, so writing a new attribute one level
+    too deep buries it inside the previous attribute's default.  The result is
+    valid YAML using only recognized keys, and the buried attribute silently
+    ceases to exist.
+    """
+    if 'default' not in node:
+        return
+    default = node['default']
+
+    swallowed = []
+    if isinstance(default, list):
+        swallowed = [d for d in default if _looks_like_an_attribute(d)]
+    elif _looks_like_an_attribute(default):
+        swallowed = [default]
+    for d in swallowed:
+        problems.append(
+            f"{where}: its 'default' contains what looks like the attribute "
+            f"'{d['name']}' rather than a value; an attribute indented one level too "
+            "deep is swallowed into the previous attribute's default, and then "
+            'declares nothing'
+        )
+
+    if typ not in KNOWN_TYPES or swallowed or default is None:
+        # `default:` with nothing after it is YAML null, which is how a schema
+        # ordinarily writes "declared, but with no value"; it is not a shape error
+        return
+    expected = {
+        'list': (list, 'a list'),
+        'tuple': (list, 'a list'),  # YAML has no tuple; a sequence is how one is written
+        'dict': (dict, 'a mapping'),
+        'str': (str, 'a string'),
+        'bool': (bool, 'a boolean'),
+    }
+    if typ in expected:
+        want, described = expected[typ]
+        if not isinstance(default, want) or (typ != 'bool' and isinstance(default, bool)):
+            problems.append(
+                f"{where}: declares 'type: {typ}' but its 'default' is "
+                f'{type(default).__name__}, not {described}'
+            )
+    elif typ in ('int', 'float'):
+        ok = isinstance(default, int if typ == 'int' else (int, float))
+        if isinstance(default, bool) or not ok:
+            problems.append(
+                f"{where}: declares 'type: {typ}' but its 'default' is {type(default).__name__}"
+            )
+
+
 def _check_node(node: dict, path: list[str], problems: list[str]):
     where = f"attribute '{_path_str(path)}'"
 
@@ -138,6 +238,10 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
             f"{where}: 'choices' is only enforced on 'str' attributes, "
             f"and this one is '{typ}'; the allowed values are not applied"
         )
+
+    _check_default_shape(node, typ, where, problems)
+    for key in ('attributes', 'value_attributes'):
+        _check_element_list(node, key, where, problems)
 
     declared = [k for k in ELEMENT_DECLARATIONS if k in node]
     if len(declared) > 1:

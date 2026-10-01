@@ -10,7 +10,7 @@ with a declaration that quietly does nothing.  The classic case is writing
 constrained, but every value is accepted.
 
 ``yclept check-spec`` reads a base config file and reports every such
-declaration:
+declaration, and every declaration whose shape is wrong:
 
 .. code-block:: console
 
@@ -43,9 +43,58 @@ What it looks for
 3. Attributes with no ``type`` at all.
 4. ``choices`` on an attribute whose type is not ``str``.  Allowed values are
    currently enforced only for strings, so elsewhere the list has no effect.
+5. Declarations whose *shape* is wrong even though every key and type name is
+   recognized --- see below.
 
 Where a suggestion is obvious, it is offered: ``options`` for ``choices``,
 ``string`` for ``str``, and so on.
+
+Shape, not just vocabulary
+--------------------------
+
+A base config can use nothing but recognized keys and still describe the wrong
+thing.  The one worth knowing about is an indentation slip, because the result
+is valid YAML that quietly loses an attribute.
+
+Attribute entries and the items of a ``default`` list sit at different depths.
+Writing a new attribute one level too deep puts it *inside the previous
+attribute's default* rather than beside it:
+
+.. code-block:: yaml
+
+   - name: str
+     type: list
+     default:
+       - toppar_all36_moreions.str
+       - name: prm            # meant to be a sibling attribute, one level out
+         type: list
+         default:
+           - dihedral_fills.prm
+
+Nothing about that is unrecognized, so for a long time ``check-spec`` passed it.
+The cost is paid twice over: ``prm`` ceases to exist, so a user config setting
+it is ignored and its defaults are never applied, and ``str`` gains a mapping
+among its filenames.  ``check-spec`` now reports it:
+
+.. code-block:: console
+
+   - attribute 'charmmff->custom->str': its 'default' contains what looks like the
+     attribute 'prm' rather than a value; an attribute indented one level too deep is
+     swallowed into the previous attribute's default, and then declares nothing
+
+The test is deliberately narrow --- a mapping with a ``name`` *and* a ``type``
+naming one of ycleptic's own types --- so ordinary data in a ``default`` is left
+alone.
+
+Two related checks come with it:
+
+- a ``default`` that contradicts its ``type``, such as ``type: list`` with a
+  string default.  ``default:`` with nothing after it is YAML ``null``, which is
+  how a schema ordinarily says "declared, but with no value", and is not
+  reported;
+- an ``attributes`` or ``value_attributes`` entry that is not an attribute at
+  all, or that has no ``name``.  Every walker in ycleptic skips such an entry,
+  so whatever it was meant to declare does not exist.
 
 Checking from Python
 --------------------

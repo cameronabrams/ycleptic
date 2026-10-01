@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- The structural check added in 2.4.3 now applies to the **top-level** `attributes:` list as well as nested ones. A non-attribute there — a stray string, or an entry with no `name:` — was skipped silently, since the root loop tested each element for being a mapping and said nothing when it was not. Every walker skips such an entry too, so whatever it was meant to declare did not exist, which is the same defect 2.4.3 closed one level down. A top-level `attributes:` that is not a list at all is reported too
+- The negative control recommended in the `check-spec` documentation could never fire, because it appended a non-attribute to the top-level list — exactly the case that went unchecked. A tip recommending a negative control shipped one that could not fail; it is now tested against the shipped example so it cannot silently stop firing again
+
 ## [2.4.3] - 2026-10-01
 
 ### Added

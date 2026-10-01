@@ -916,6 +916,38 @@ attributes:
         problems = check_base_spec(base)
         self.assertTrue(any('must be a list of attributes' in p for p in problems))
 
+    def test_spec_check_flags_a_non_attribute_at_the_top_level(self):
+        """The root attributes list gets the same element check as a nested one.
+
+        It did not until 2.4.4: a non-dict at the root was skipped silently, so
+        the negative control the docs recommended could never fire.
+        """
+        base = yaml.safe_load('attributes:\n  - {name: a, type: str, text: t}\n')
+        base['attributes'].append('not-an-attribute')
+        problems = check_base_spec(base)
+        self.assertTrue(any('is not an attribute' in p for p in problems))
+        self.assertTrue(any('the top level' in p for p in problems))
+
+    def test_spec_check_flags_a_top_level_attribute_with_no_name(self):
+        base = yaml.safe_load('attributes:\n  - {type: str, text: t}\n')
+        self.assertTrue(any("has no 'name'" in p for p in check_base_spec(base)))
+
+    def test_spec_check_flags_a_top_level_attributes_that_is_not_a_list(self):
+        base = yaml.safe_load('attributes:\n  name: a\n')
+        self.assertTrue(any('must be a list of attributes' in p for p in check_base_spec(base)))
+
+    def test_the_documented_negative_control_actually_fires(self):
+        """The exact recipe in usage/yclept_check-spec.rst, against the shipped example.
+
+        A negative control that cannot fail is the same bug it is guarding
+        against, so the documented one is itself under test.
+        """
+        with open(BFILE, 'r') as f:
+            bad = yaml.safe_load(f)
+        self.assertEqual(check_base_spec(yaml.safe_load(open(BFILE))), [])
+        bad['attributes'].append('not-an-attribute')
+        self.assertNotEqual(check_base_spec(bad), [])
+
     def test_shipped_example_passes_the_structural_checks(self):
         with open(BFILE, 'r') as f:
             self.assertEqual(check_base_spec(yaml.safe_load(f)), [])

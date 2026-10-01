@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `check-spec` and the load-time spec check now look at a base config's *shape*, not only its vocabulary. A base config can use nothing but recognized keys and type names and still describe the wrong thing, and nothing said so until now
+  - an attribute indented one level too deep is swallowed into the previous attribute's `default:` list, where it declares nothing at all. This is valid YAML using only recognized keys, so it passed; meanwhile the attribute ceases to exist, a user config setting it is silently ignored, its defaults are never applied, and its neighbour gains a mapping among its values. Reported by pestifer, which lost a force-field conflict-resolution file this way with nothing in any log to say so. The test is narrow — a mapping carrying a `name` and a `type` naming one of ycleptic's own types — so ordinary data in a `default:` is left alone
+  - a `default:` that contradicts its own `type:`, such as `type: list` with a string default. `default:` with nothing after it is YAML null, the ordinary way to write "declared, but with no value", and is not reported
+  - an `attributes:` or `value_attributes:` entry that is not an attribute, or that has no `name:`, or an `attributes:` that is not a list at all. Every walker skips such an entry, so whatever it was meant to declare does not exist
+
+### Changed
+- `yclept check-spec` now says `no declarations ycleptic ignores` on a clean spec, rather than `no unrecognized keys or types`, since it no longer checks only keys and types
+
 ## [2.4.2] - 2026-09-13
 
 ### Fixed

@@ -54,7 +54,7 @@ def check_spec(args):
         base = yaml.safe_load(f)
     problems = check_base_spec(base)
     if not problems:
-        print(f'{args.config}: no unrecognized keys or types')
+        print(f'{args.config}: no declarations ycleptic ignores')
         return
     print(format_problems(problems, args.config), file=sys.stderr)
     sys.exit(1)

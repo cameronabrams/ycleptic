@@ -465,7 +465,7 @@ base|attribute_2->attribute_2a
             with redirect_stdout(f):
                 check_spec(Namespace(config=BFILE))
         with open('console-out.txt', 'r') as f:
-            self.assertIn('no unrecognized keys or types', f.read())
+            self.assertIn('no declarations ycleptic ignores', f.read())
 
     def test_makedoc(self):
         Y = Yclept(BFILE)
@@ -802,6 +802,123 @@ attributes:
         Y = Yclept('freekey_mut.yaml', userdict={'things': {'mine': {'size': 3}}})
         self.assertIn('mine', Y['user']['things'])
         self.assertEqual(Y['base']['attributes'][0]['default'], {'preset': {}})
+
+    # ------------------------------------------------------------------
+    # Structural checks: shape, not just vocabulary
+    # ------------------------------------------------------------------
+
+    # An indentation slip, reported by pestifer-repo 2026-10-01.  'prm' is written
+    # one level too deep, so YAML buries it in 'str's default list instead of
+    # putting it beside 'str'.  Every key and type name is recognized.
+    SWALLOW_YAML = """
+attributes:
+  - name: custom
+    type: dict
+    text: custom files
+    attributes:
+      - name: str
+        type: list
+        text: stream files
+        default:
+          - toppar_all36_moreions.str
+          - name: prm
+            type: list
+            text: parameter files
+            default:
+              - dihedral_fills.prm
+"""
+
+    def test_spec_check_flags_an_attribute_swallowed_into_a_default(self):
+        base = yaml.safe_load(self.SWALLOW_YAML)
+        # the attribute really is gone, which is what makes this worth reporting
+        custom = base['attributes'][0]
+        self.assertEqual([a['name'] for a in custom['attributes']], ['str'])
+        problems = check_base_spec(base)
+        self.assertTrue(any("looks like the attribute 'prm'" in p for p in problems))
+        self.assertTrue(any("custom->str" in p for p in problems))
+
+    def test_spec_check_passes_the_correctly_indented_twin(self):
+        """The same schema with 'prm' at the right depth must stay clean."""
+        good = yaml.safe_load(
+            self.SWALLOW_YAML.replace(
+                """          - name: prm
+            type: list
+            text: parameter files
+            default:
+              - dihedral_fills.prm""",
+                """      - name: prm
+        type: list
+        text: parameter files
+        default:
+          - dihedral_fills.prm""",
+            )
+        )
+        self.assertEqual([a['name'] for a in good['attributes'][0]['attributes']], ['str', 'prm'])
+        self.assertEqual(check_base_spec(good), [])
+
+    def test_spec_check_ignores_ordinary_mappings_in_a_default(self):
+        """A default of real data must not be mistaken for a swallowed attribute."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: hosts\n'
+            '    type: list\n'
+            '    text: hosts\n'
+            '    default:\n'
+            '      - {name: alpha, type: compute}\n'  # 'type' is not a ycleptic type
+        )
+        self.assertEqual(check_base_spec(base), [])
+
+    def test_spec_check_flags_a_default_that_contradicts_its_type(self):
+        base = yaml.safe_load(
+            'attributes:\n  - {name: a, type: list, text: t, default: not-a-list}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("'type: list'" in p and 'not a list' in p for p in problems))
+
+    def test_spec_check_allows_an_empty_default(self):
+        """`default:` with nothing after it is YAML null: 'declared, no value'."""
+        base = yaml.safe_load('attributes:\n  - {name: a, type: str, text: t, default: null}\n')
+        self.assertEqual(check_base_spec(base), [])
+
+    def test_spec_check_flags_a_non_attribute_in_an_attributes_list(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: outer\n'
+            '    type: dict\n'
+            '    text: t\n'
+            '    attributes:\n'
+            '      - just-a-string\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('is not an attribute' in p for p in problems))
+
+    def test_spec_check_flags_an_attribute_with_no_name(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: outer\n'
+            '    type: dict\n'
+            '    text: t\n'
+            '    attributes:\n'
+            '      - {type: str, text: nameless}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any("has no 'name'" in p for p in problems))
+
+    def test_spec_check_flags_attributes_that_is_not_a_list(self):
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: outer\n'
+            '    type: dict\n'
+            '    text: t\n'
+            '    attributes:\n'
+            '      name: inner\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('must be a list of attributes' in p for p in problems))
+
+    def test_shipped_example_passes_the_structural_checks(self):
+        with open(BFILE, 'r') as f:
+            self.assertEqual(check_base_spec(yaml.safe_load(f)), [])
 
     # ------------------------------------------------------------------
     # value_type: free-key mappings and lists of scalars

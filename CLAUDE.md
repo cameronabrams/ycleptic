@@ -167,29 +167,41 @@ conda recipe fetches,
 about ten minutes after `files.pythonhosted.org` was already serving the file.
 
 That second one has a trap in it. Recomputing a hash with
-`curl -sL <url> | sha256sum` through a 404 hashes whatever the server sent,
-which is not the file. **Gate on the HTTP status and the byte count, never on
-the hash looking wrong:**
+`curl -sL <url> | sha256sum` hashes whatever the server sent, which may not be
+the file. **A hash is only as good as the proof that you downloaded the thing
+you asked for**, and each obvious proxy for that is insufficient:
+
+- *the hash looking wrong* — an empty body hashes to
+  `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the
+  SHA256 of the empty string, which is the **lucky** case because it is
+  recognisable. A 404 carrying an error page has no tell at all. Whether a 404
+  body is empty depends on the *path shape*, not the host: measured
+  2026-10-01, `/packages/source/<l>/<pkg>/<pkg>-<v>.tar.gz` returned 0 bytes on
+  `files.pythonhosted.org`, `pypi.org` and `pypi.io` alike, while the long
+  hashed `/packages/<a>/<b>/<digest>/...` form returned a few hundred bytes of
+  HTML — whose hash differed between two runs minutes apart. Never key on a
+  constant, and do not name a host.
+- *`curl -f`* — it leaves no file at all, so a later `sha256sum` prints nothing
+  to stdout (the error goes to stderr). Two such empty strings compare equal,
+  so `[ "$a" = "$b" ]` reports a match between two files that do not exist.
+- *HTTP status and byte count* — necessary, not sufficient. Measured
+  2026-10-01, `https://pypi.org/project/<name>/` fetched from a script returns
+  **HTTP 200, 3038 bytes** of a "Client Challenge" interstitial, and the body is
+  **byte-identical for a real project and a nonexistent one**. `curl -f` exits
+  0, the status passes, the size passes, and the hash is stable and meaningless.
+
+So require the content to *be* what you asked for:
 
     read -r code size < <(curl -sL -w '%{http_code} %{size_download}' -o f.tar.gz "$URL")
     [ "$code" = 200 ] && [ "$size" -gt 0 ] || { echo "download failed: $code/$size"; exit 1; }
+    tar tzf f.tar.gz >/dev/null || { echo "not an sdist"; exit 1; }
     sha256sum f.tar.gz
 
-An empty body hashes to
-`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the SHA256
-of the empty string — but that is the *lucky* case, because it is at least
-recognisable. A 404 that returns an error page hashes to something with no tell
-at all. Measured 2026-10-01: `pypi.org` returned 0 bytes while
-`files.pythonhosted.org` returned a 388-byte error body — and pestifer-repo
-measured the two the other way round the same day, so which host sends a body
-is not stable either. Keying on the constant would be a check aimed one level
-off, which is the failure this file already warns about twice.
+For an API, parse the field you came for rather than trusting the response.
+Endpoints differ: in the same measurement `https://pypi.org/pypi/<name>/json`
+returned an honest 404 of 24 bytes for a nonexistent package, where the HTML
+project page did not. Check the endpoint you actually use.
 
-`curl -f` does not save you here: it suppresses a body that was already empty,
-and leaves no file at all, so a later `sha256sum` on the missing file writes to
-stderr and prints **nothing** to stdout. Two such empty strings compare equal,
-so a naive `[ "$a" = "$b" ]` reports a match between two files that do not
-exist.
 ycleptic is also headed for conda-forge (staged-recipes#34763); once a feedstock
 exists, the autotick-bot bump PR that follows each release is part of the
 release too.

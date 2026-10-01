@@ -166,12 +166,30 @@ conda recipe fetches,
 `https://pypi.org/packages/source/y/ycleptic/ycleptic-<v>.tar.gz`, 404'd for
 about ten minutes after `files.pythonhosted.org` was already serving the file.
 
-That second one has a trap in it. Recomputing the hash with
-`curl -sL <url> | sha256sum` through a 404 hashes **zero bytes** and yields
-`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` — the
-SHA256 of the empty string. It looks like a verification and is not one. Use
-`curl -sSLf -o file` and check the byte count, and recognise that constant on
-sight.
+That second one has a trap in it. Recomputing a hash with
+`curl -sL <url> | sha256sum` through a 404 hashes whatever the server sent,
+which is not the file. **Gate on the HTTP status and the byte count, never on
+the hash looking wrong:**
+
+    read -r code size < <(curl -sL -w '%{http_code} %{size_download}' -o f.tar.gz "$URL")
+    [ "$code" = 200 ] && [ "$size" -gt 0 ] || { echo "download failed: $code/$size"; exit 1; }
+    sha256sum f.tar.gz
+
+An empty body hashes to
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the SHA256
+of the empty string — but that is the *lucky* case, because it is at least
+recognisable. A 404 that returns an error page hashes to something with no tell
+at all. Measured 2026-10-01: `pypi.org` returned 0 bytes while
+`files.pythonhosted.org` returned a 388-byte error body — and pestifer-repo
+measured the two the other way round the same day, so which host sends a body
+is not stable either. Keying on the constant would be a check aimed one level
+off, which is the failure this file already warns about twice.
+
+`curl -f` does not save you here: it suppresses a body that was already empty,
+and leaves no file at all, so a later `sha256sum` on the missing file writes to
+stderr and prints **nothing** to stdout. Two such empty strings compare equal,
+so a naive `[ "$a" = "$b" ]` reports a match between two files that do not
+exist.
 ycleptic is also headed for conda-forge (staged-recipes#34763); once a feedstock
 exists, the autotick-bot bump PR that follows each release is part of the
 release too.

@@ -156,6 +156,22 @@ on, and keep the `ycleptic.src` deprecation shim until it is confirmed unused.
 
 A release is not finished when `release.sh` exits. Confirm PyPI actually serves
 the new version, and smoke-test the published wheel rather than the checkout.
+
+**Two propagation delays make a landed release look missing, both observed on
+2026-10-01 minutes apart.** PyPI's JSON endpoint (`/pypi/<pkg>/json`) kept
+reporting the previous version for ~75 s after the tag was pushed, while the
+simple index already had the new one — so anything that gates on
+`info.version` must poll rather than conclude. And the canonical sdist URL the
+conda recipe fetches,
+`https://pypi.org/packages/source/y/ycleptic/ycleptic-<v>.tar.gz`, 404'd for
+about ten minutes after `files.pythonhosted.org` was already serving the file.
+
+That second one has a trap in it. Recomputing the hash with
+`curl -sL <url> | sha256sum` through a 404 hashes **zero bytes** and yields
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` — the
+SHA256 of the empty string. It looks like a verification and is not one. Use
+`curl -sSLf -o file` and check the byte count, and recognise that constant on
+sight.
 ycleptic is also headed for conda-forge (staged-recipes#34763); once a feedstock
 exists, the autotick-bot bump PR that follows each release is part of the
 release too.

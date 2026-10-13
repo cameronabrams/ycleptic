@@ -47,7 +47,7 @@ stubs — a new module needs a new `api/ycleptic.<mod>.rst`.
 Because a base config is data, **an unrecognized key is not an error, it is a
 no-op** — that is the failure mode speccheck exists to surface. The same is
 true of a base config whose *shape* is wrong while its vocabulary is perfect:
-an attribute indented one level too deep lands in its neighbour's `default:`
+an attribute indented one level too deep lands in its neighbor's `default:`
 list and simply ceases to exist. speccheck reports that too; see
 `_check_default_shape` and `_check_element_list`. If you add a
 key or type name to the schema vocabulary, add it to `KNOWN_ATTRIBUTE_KEYS`,
@@ -174,12 +174,12 @@ you asked for**, and each obvious proxy for that is insufficient:
 - *the hash looking wrong* — an empty body hashes to
   `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, the
   SHA256 of the empty string, which is the **lucky** case because it is
-  recognisable. A 404 carrying an error body has no tell at all. Whether the
+  recognizable. A 404 carrying an error body has no tell at all. Whether the
   body is empty depends on the *path shape*, not the host — measured
   2026-10-01:
   - `/packages/source/<l>/<pkg>/<pkg>-<v>.tar.gz`, the form a conda recipe
     uses, 404s at **0 bytes** from `files.pythonhosted.org`, `pypi.org` and
-    `pypi.io` alike, giving the recognisable constant;
+    `pypi.io` alike, giving the recognizable constant;
   - the direct `/packages/<a>/<b>/<digest>/<file>` form returns an S3
     `NoSuchKey` XML body that echoes the key and carries a per-request
     `RequestId` and `HostId`, so four never-requested keys gave 369, 389, 369

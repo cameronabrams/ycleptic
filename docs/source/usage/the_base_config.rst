@@ -157,7 +157,7 @@ Mappings whose keys the user chooses
 ``attributes`` names the keys a user may write, and any other key is an error.
 That is the right model for most configuration, but some sections are keyed by
 names only the user knows --- molecules in a formulation, named reactions,
-labelled species.  Declaring such a section as a bare ``type: dict`` passes it
+labeled species.  Declaring such a section as a bare ``type: dict`` passes it
 through unvalidated, which means no defaults, no type checking and no generated
 documentation for exactly the content users are most likely to get wrong.
 

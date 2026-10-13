@@ -11,7 +11,7 @@ here look over a base spec as it is loaded and report those declarations.
 
 Vocabulary is only half of it.  A base config can use nothing but recognized
 keys and types and still have the wrong *shape*: an attribute indented one
-level too deep is swallowed into its neighbour's ``default`` list, where it
+level too deep is swallowed into its neighbor's ``default`` list, where it
 declares nothing at all, and a ``default`` can contradict the ``type`` beside
 it.  Those are checked here too, since neither announces itself at runtime.
 """
@@ -164,7 +164,7 @@ def _check_element_list(node: dict, key: str, where: str, problems: list[str]):
 def _check_default_shape(node: dict, typ, where: str, problems: list[str]):
     """
     Report a ``default`` that cannot be what its ``type`` says, and one that has
-    swallowed what looks like a neighbouring attribute.
+    swallowed what looks like a neighboring attribute.
 
     The swallow is an indentation slip: attribute entries and the items of a
     ``default`` list sit at different depths, so writing a new attribute one level

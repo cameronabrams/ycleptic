@@ -19,6 +19,23 @@ the {doc}`changelog` and check it off here.
   same as the single-argument branch, so every invalid-config error is the
   same catchable `YclepticError`. *(Shipped.)*
 
+- [ ] **No way to express replace-on-present for a list nested inside a bare
+  `dict` attribute.** `list_defaults: replace` governs only the `list` attribute
+  it is declared on. A list-valued entry inside a `dict` attribute that declares
+  no subattributes is merged by `special_update`, which always appends, and
+  there is no declaration that changes it — so the schema author cannot say
+  "the user's list supersedes mine" at that position at all. This is a step
+  worse than the failure class `check-spec` exists for: not a declaration that
+  silently does nothing, but a declaration that cannot be written. Raised by
+  pestifer 2026-10-16, which has exactly this shape in its relaxation protocols
+  and composition sections and expects to hit it. Deliberately parked, not
+  fixed: `special_update`'s merge semantics are relied on by every downstream
+  app, so changing the default is out, and any fix is a new opt-in key plus the
+  matching `speccheck` vocabulary, `make-doc` rendering and `console_help`
+  text — the single-source-of-truth invariant means it is three changes, not
+  one. Documented meanwhile as a `.. warning::` in
+  `usage/the_base_config.rst`.
+
 ## Tooling & CI
 
 - [x] **Run the test suite in CI on every push/PR.** Added

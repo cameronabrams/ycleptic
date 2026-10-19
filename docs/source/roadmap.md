@@ -28,7 +28,19 @@ the {doc}`changelog` and check it off here.
   worse than the failure class `check-spec` exists for: not a declaration that
   silently does nothing, but a declaration that cannot be written. Raised by
   pestifer 2026-10-16, which has exactly this shape in its relaxation protocols
-  and composition sections and expects to hit it. Deliberately parked, not
+  and composition sections and expects to hit it.
+
+  Measured 2026-10-19, and the effect is worse than extra entries. The nested
+  merge is `special_update`'s, which *deduplicates* but preserves the default's
+  ordering, so a user's list is interleaved into the default rather than
+  following it: default `steps: [min, nvt, npt]` with the user writing
+  `steps: [nvt, custom]` yields `[min, nvt, npt, custom]`. For an ordered
+  construct — a relaxation protocol is exactly that — the user's sequence is
+  silently rewritten, not merely extended. The two appends in ycleptic are also
+  not the same operation: the `list`-attribute path is a plain
+  `defaults + I[d]` and does duplicate.
+
+  Deliberately parked, not
   fixed: `special_update`'s merge semantics are relied on by every downstream
   app, so changing the default is out, and any fix is a new opt-in key plus the
   matching `speccheck` vocabulary, `make-doc` rendering and `console_help`

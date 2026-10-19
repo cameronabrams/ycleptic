@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-19
+
 ### Added
 - `list_defaults` now works on a `dict` attribute that declares no `attributes`, where it governs the list-valued entries of that dict's `default`. Previously it reached only the `list` attribute it was declared on, and a list inside a dict default had no way to express replace-on-present at all — not a declaration that was silently ignored, but one that could not be written. `append` remains the default at both positions, so no existing base config changes behavior
 - The two merges differ under `append`, which the documentation now states: a `list` attribute's default is concatenated and can duplicate, while a dict entry's is merged by `special_update`, which deduplicates but keeps the **default's** ordering. A user writing `steps: [nvt, custom]` against a default of `[min, nvt, npt]` gets `[min, nvt, npt, custom]` — for an ordered construct such as a relaxation protocol, their sequence is rewritten rather than extended. Raised by pestifer, which has that shape

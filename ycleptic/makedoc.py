@@ -167,6 +167,20 @@ def make_doc(
                             'These defaults are **kept**, and a list you supply is added '
                             'after them.\n\n'
                         )
+                elif isinstance(default, dict) and any(
+                    isinstance(v, list) and v for v in default.values()
+                ):
+                    if s.get('list_defaults', 'append') == 'replace':
+                        f.write(
+                            'For an entry whose default is a list, a list you supply '
+                            '**replaces** it entirely.\n\n'
+                        )
+                    else:
+                        f.write(
+                            'For an entry whose default is a list, the defaults above are '
+                            '**kept** and anything you supply that is not already among them '
+                            'is added, in the order shown above rather than yours.\n\n'
+                        )
                 if sub_doctext:
                     f.write(f'{sub_doctext}\n\n')
                 if sub_example:

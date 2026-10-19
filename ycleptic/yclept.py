@@ -202,6 +202,17 @@ class Yclept(UserDict):
                 H.write_func(f'    default:{end}')
                 for k, v in item['default'].items():
                     H.write_func(f'        {k}: {v}{end}')
+                if any(isinstance(v, list) and v for v in item['default'].values()):
+                    if item.get('list_defaults', 'append') == 'replace':
+                        H.write_func(
+                            f'    For an entry defaulting to a list, a list you '
+                            f'supply replaces it.{end}'
+                        )
+                    else:
+                        H.write_func(
+                            f'    For an entry defaulting to a list, what you supply is '
+                            f'added to the default, in the order shown above.{end}'
+                        )
 
     def _endhelp(self):
         self.H.write_func("Thank you for using ycleptic's interactive help!")

@@ -1186,6 +1186,108 @@ attributes:
         self.assertTrue(any("applies only to 'list'" in p for p in problems))
 
     # ------------------------------------------------------------------
+    # list_defaults on a dict attribute
+    # ------------------------------------------------------------------
+
+    def _write_dict_base(self, mode=None, name='dictmode_base.yaml'):
+        node = {
+            'name': 'protocol',
+            'type': 'dict',
+            'text': 'a bare dict whose default carries a list',
+            'default': {'steps': ['min', 'nvt', 'npt'], 'temp': 300},
+        }
+        if mode is not None:
+            node['list_defaults'] = mode
+        with open(name, 'w') as f:
+            yaml.dump({'attributes': [node]}, f)
+        return name
+
+    def test_dict_list_defaults_append_is_the_default(self):
+        """Historical behavior: deduplicated, and in the DEFAULT's order, not the user's."""
+        base = self._write_dict_base()
+        Y = Yclept(base, userdict={'protocol': {'steps': ['nvt', 'custom']}})
+        self.assertEqual(Y['user']['protocol']['steps'], ['min', 'nvt', 'npt', 'custom'])
+
+    def test_dict_list_defaults_replace_honors_the_user_list_and_its_order(self):
+        """The point of the mode: the user's sequence survives intact."""
+        base = self._write_dict_base(mode='replace')
+        Y = Yclept(base, userdict={'protocol': {'steps': ['nvt', 'custom']}})
+        self.assertEqual(Y['user']['protocol']['steps'], ['nvt', 'custom'])
+
+    def test_dict_list_defaults_replace_leaves_non_list_entries_alone(self):
+        """Only list-valued entries are affected; a scalar still overwrites, and an
+        entry the user omits still comes from the default."""
+        base = self._write_dict_base(mode='replace')
+        Y = Yclept(base, userdict={'protocol': {'steps': ['min'], 'temp': 310}})
+        self.assertEqual(Y['user']['protocol'], {'steps': ['min'], 'temp': 310})
+        Y = Yclept(base, userdict={'protocol': {'steps': ['min']}})
+        self.assertEqual(Y['user']['protocol']['temp'], 300)
+
+    def test_dict_list_defaults_replace_still_supplies_default_when_absent(self):
+        base = self._write_dict_base(mode='replace')
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['protocol']['steps'], ['min', 'nvt', 'npt'])
+
+    def test_dict_list_defaults_does_not_mutate_the_base_spec(self):
+        """Two Yclepts off one base must not see each other's merges."""
+        base = self._write_dict_base()
+        Yclept(base, userdict={'protocol': {'steps': ['custom']}})
+        Y = Yclept(base, userdict={})
+        self.assertEqual(Y['user']['protocol']['steps'], ['min', 'nvt', 'npt'])
+
+    def test_dict_list_defaults_applies_to_a_free_key_mapping(self):
+        """A dict declaring value_type merges its default the same way."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: groups\n'
+            '    type: dict\n'
+            '    text: free-key mapping\n'
+            '    list_defaults: replace\n'
+            '    value_type: str\n'
+            '    default: {a: x}\n'
+        )
+        with open('freekey_base.yaml', 'w') as f:
+            yaml.dump(base, f)
+        Y = Yclept('freekey_base.yaml', userdict={'groups': {'b': 'y'}})
+        self.assertEqual(Y['user']['groups'], {'a': 'x', 'b': 'y'})
+
+    def test_spec_check_allows_list_defaults_on_a_bare_dict(self):
+        """The declaration this feature adds must not be reported as a mistake."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - {name: p, type: dict, text: t, list_defaults: replace, '
+            'default: {steps: [a, b]}}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertEqual([p for p in problems if 'list_defaults' in p], [])
+
+    def test_spec_check_flags_list_defaults_on_a_dict_with_attributes(self):
+        """Such a dict is walked attribute by attribute; its own default never merges."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - name: p\n'
+            '    type: dict\n'
+            '    text: t\n'
+            '    list_defaults: replace\n'
+            '    attributes:\n'
+            '      - {name: steps, type: list, text: t, default: [a]}\n'
+        )
+        problems = check_base_spec(base)
+        self.assertTrue(any('never merged' in p for p in problems))
+
+    def test_dict_list_defaults_leaves_deeper_lists_alone(self):
+        """A list two levels down goes through dict.update under either mode --
+        longstanding behavior this feature deliberately does not change."""
+        base = yaml.safe_load(
+            'attributes:\n'
+            '  - {name: p, type: dict, text: t, default: {inner: {steps: [a, b]}}}\n'
+        )
+        with open('deep_base.yaml', 'w') as f:
+            yaml.dump(base, f)
+        Y = Yclept('deep_base.yaml', userdict={'p': {'inner': {'steps': ['c']}}})
+        self.assertEqual(Y['user']['p']['inner']['steps'], ['c'])
+
+    # ------------------------------------------------------------------
     # make_default_specs
     # ------------------------------------------------------------------
 

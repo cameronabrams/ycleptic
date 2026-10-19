@@ -94,6 +94,8 @@ tests/test_set/reclist_mut.yaml
 tests/test_set/alias_base.yaml
 tests/test_set/required_base.yaml
 tests/test_set/listmode_base.yaml
+tests/test_set/dictmode_base.yaml
+tests/test_set/deep_base.yaml
 tests/test_set/both_base.yaml
 tests/test_set/type_base.yaml
 

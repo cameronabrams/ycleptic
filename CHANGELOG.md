@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `list_defaults` now works on a `dict` attribute that declares no `attributes`, where it governs the list-valued entries of that dict's `default`. Previously it reached only the `list` attribute it was declared on, and a list inside a dict default had no way to express replace-on-present at all — not a declaration that was silently ignored, but one that could not be written. `append` remains the default at both positions, so no existing base config changes behavior
+- The two merges differ under `append`, which the documentation now states: a `list` attribute's default is concatenated and can duplicate, while a dict entry's is merged by `special_update`, which deduplicates but keeps the **default's** ordering. A user writing `steps: [nvt, custom]` against a default of `[min, nvt, npt]` gets `[min, nvt, npt, custom]` — for an ordered construct such as a relaxation protocol, their sequence is rewritten rather than extended. Raised by pestifer, which has that shape
+- `speccheck` accordingly accepts `list_defaults` on such a `dict`, and reports it on a `dict` that declares `attributes`, where the dict is walked attribute by attribute and its own `default` never merges. Generated docs and interactive help both state which mode is in force wherever a dict default containing a list is shown
+
+  The mode governs lists at the top level of that `default` only. A list nested in a deeper mapping is still overwritten by `dict.update` under either mode — longstanding behavior that downstream base configs are written against, so it is documented rather than quietly corrected
+
 ## [2.4.4] - 2026-10-01
 
 ### Fixed

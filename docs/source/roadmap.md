@@ -19,7 +19,7 @@ the {doc}`changelog` and check it off here.
   same as the single-argument branch, so every invalid-config error is the
   same catchable `YclepticError`. *(Shipped.)*
 
-- [ ] **No way to express replace-on-present for a list nested inside a bare
+- [x] **No way to express replace-on-present for a list nested inside a bare
   `dict` attribute.** `list_defaults: replace` governs only the `list` attribute
   it is declared on. A list-valued entry inside a `dict` attribute that declares
   no subattributes is merged by `special_update`, which always appends, and
@@ -40,13 +40,16 @@ the {doc}`changelog` and check it off here.
   not the same operation: the `list`-attribute path is a plain
   `defaults + I[d]` and does duplicate.
 
-  Deliberately parked, not
-  fixed: `special_update`'s merge semantics are relied on by every downstream
-  app, so changing the default is out, and any fix is a new opt-in key plus the
-  matching `speccheck` vocabulary, `make-doc` rendering and `console_help`
-  text — the single-source-of-truth invariant means it is three changes, not
-  one. Documented meanwhile as a `.. warning::` in
-  `usage/the_base_config.rst`.
+  Fixed by extending `list_defaults` to a `dict` attribute that
+  declares no `attributes`, where it governs the list-valued entries of that
+  dict's `default`. `append` stays the default at both positions, so no
+  existing base config changes behavior. `special_update` gained a `list_mode`
+  parameter; `speccheck` now accepts the key there and reports it on a `dict`
+  that declares `attributes`; `make-doc` and `console_help` both state the mode
+  wherever such a default is shown, which is what the single-source-of-truth
+  invariant requires. A list nested deeper than the top level of the default is
+  still overwritten by `dict.update` under either mode, documented rather than
+  quietly corrected. *(Shipped.)*
 
 ## Tooling & CI
 

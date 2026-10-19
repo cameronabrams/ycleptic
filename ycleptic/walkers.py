@@ -146,12 +146,22 @@ LIST_DEFAULTS_MODES = ('append', 'replace')
 
 def _list_defaults_mode(dx: dict, dname: str) -> str:
     """
-    Return the ``list_defaults`` mode of list attribute spec ``dx``.
+    Return the ``list_defaults`` mode of attribute spec ``dx``.
 
     Defaults to ``'append'``, which is ycleptic's historical behavior: a
     declared default list is prepended to whatever the user supplies.  A schema
     whose list defaults are meant to be *superseded* by the user rather than
     added to declares ``list_defaults: replace``.
+
+    It governs two positions, because a default list can be merged at either.
+    On a ``list`` attribute it governs that attribute's own default.  On a
+    ``dict`` attribute that does not declare ``attributes`` -- whose default is
+    merged wholesale by :func:`~ycleptic.dictthings.special_update` -- it
+    governs every list-valued entry within that default.  The two merges are
+    not the same operation under ``append``: the list attribute's is a plain
+    concatenation and can duplicate, while the dict entry's deduplicates and
+    keeps the default's ordering.  Under ``replace`` both yield the user's list
+    verbatim, which is what makes ordering recoverable.
     """
     mode = dx.get('list_defaults', 'append')
     if mode not in LIST_DEFAULTS_MODES:
@@ -451,10 +461,18 @@ def dwalk(D: dict, I: dict):
                 elif 'value_attributes' in dx or 'value_type' in dx:
                     # special_update writes into its first argument, so the base
                     # spec's default must not be passed in directly
-                    I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
+                    I[d] = special_update(
+                        deepcopy(dx.get('default', {})),
+                        I[d],
+                        list_mode=_list_defaults_mode(dx, dname),
+                    )
                     _fwalk(dx, I[d], dname)
                 else:
-                    I[d] = special_update(deepcopy(dx.get('default', {})), I[d])
+                    I[d] = special_update(
+                        deepcopy(dx.get('default', {})),
+                        I[d],
+                        list_mode=_list_defaults_mode(dx, dname),
+                    )
             elif typ == 'list':
                 # process list-item children
                 if 'attributes' in dx:

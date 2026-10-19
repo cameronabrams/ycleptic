@@ -48,7 +48,7 @@ KNOWN_TOP_KEYS = frozenset({'attributes', 'docs'})
 #: Type names ycleptic recognizes.
 KNOWN_TYPES = frozenset({'str', 'int', 'float', 'bool', 'tuple', 'list', 'dict'})
 
-#: Legal values of a list attribute's ``list_defaults`` key.
+#: Legal values of the ``list_defaults`` key, on a ``list`` or ``dict`` attribute.
 KNOWN_LIST_DEFAULTS = frozenset({'append', 'replace'})
 
 #: Scalar types an element schema may declare via ``value_type``.
@@ -279,17 +279,26 @@ def _check_node(node: dict, path: list[str], problems: list[str]):
 
     if 'list_defaults' in node:
         mode = node['list_defaults']
-        if typ != 'list':
+        if typ not in ('list', 'dict'):
             problems.append(
-                f"{where}: 'list_defaults' applies only to 'list' attributes, "
+                f"{where}: 'list_defaults' applies only to 'list' and 'dict' attributes, "
                 f"and this one is '{typ}'; it is ignored"
             )
         elif 'attributes' in node:
-            problems.append(
-                f"{where}: 'list_defaults' governs how a plain list's 'default' merges with "
-                "the user's, but this list declares 'attributes', so its items are walked as "
-                'an ordered sequence of tasks and no default list is ever merged; it is ignored'
-            )
+            if typ == 'list':
+                problems.append(
+                    f"{where}: 'list_defaults' governs how a plain list's 'default' merges "
+                    "with the user's, but this list declares 'attributes', so its items are "
+                    'walked as an ordered sequence of tasks and no default list is ever '
+                    'merged; it is ignored'
+                )
+            else:
+                problems.append(
+                    f"{where}: 'list_defaults' governs the list-valued entries of a dict's "
+                    "'default', but this dict declares 'attributes', so it is walked "
+                    'attribute by attribute and its own default is never merged; declare '
+                    'list_defaults on the list attributes beneath it instead; it is ignored'
+                )
         elif mode not in KNOWN_LIST_DEFAULTS:
             problems.append(
                 f"{where}: unrecognized list_defaults '{mode}'"

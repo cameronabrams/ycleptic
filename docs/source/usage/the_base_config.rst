@@ -133,7 +133,7 @@ There are several other keys an attribute may have:
 6. ``value_attributes``: for ``dict`` and ``list`` attributes; declares the schema every *element* must satisfy --- every value of a mapping whose keys the user invents, or every item of a list.  See :ref:`base_config_free_keys` and :ref:`base_config_record_lists` below.
 7. ``value_type``: the same idea for elements that are plain scalars rather than attribute blocks; one of ``str``, ``int``, ``float`` or ``bool``.
 8. ``key_text``: a one-line description of what a free-form key *means*, used alongside ``value_attributes`` or ``value_type`` on a ``dict``.
-9. ``list_defaults``: for ``list`` attributes only; either ``append`` (the default) or ``replace``, controlling what happens to a declared ``default`` when the user supplies a list of their own.  See :ref:`base_config_list_defaults` below.
+9. ``list_defaults``: for ``list`` attributes, and for ``dict`` attributes that do not declare ``attributes``; either ``append`` (the default) or ``replace``, controlling what happens to a declared ``default`` when the user supplies a list of their own --- on a ``list`` attribute to its own default, on a ``dict`` attribute to the list-valued entries of its default.  See :ref:`base_config_list_defaults` below.
 
 .. warning::
 
@@ -338,12 +338,44 @@ attribute altogether.
 Both settings are stated in generated documentation and in interactive help
 wherever a list default is shown, so a user need not guess which applies.
 
-.. warning::
+Lists inside a ``dict`` attribute's default
++++++++++++++++++++++++++++++++++++++++++++
 
-   ``list_defaults`` governs the ``list`` attribute it is declared on.  It does
-   not reach inside a bare ``dict`` attribute, where list-valued entries are
-   merged by :func:`~ycleptic.dictthings.special_update` and are always
-   appended.
+The same key works on a ``dict`` attribute that does **not** declare
+``attributes`` --- a bare ``dict``, or a free-key mapping declaring
+``value_type`` or ``value_attributes``.  There it governs every list-valued
+entry of that dict's ``default``:
+
+.. code-block:: yaml
+
+    - name: protocol
+      type: dict
+      list_defaults: replace
+      text: the relaxation protocol
+      default:
+        steps: [min, nvt, npt]
+        temperature: 300
+
+Under ``append`` --- again the default, so nothing changes for existing base
+configs --- the merge is :func:`~ycleptic.dictthings.special_update`'s, which
+behaves differently from the ``list`` attribute's in a way worth knowing.  It
+*deduplicates*, so a repeated entry does not appear twice, but it preserves the
+**default's** ordering: a user writing ``steps: [nvt, custom]`` against the
+default above gets ``[min, nvt, npt, custom]``.  Their sequence has not been
+extended, it has been rewritten.  For an ordered construct --- and a relaxation
+protocol is exactly that --- ``replace`` is almost certainly what you mean.
+
+Non-list entries are untouched either way: a scalar the user supplies still
+overwrites the default, and one they omit still comes from it.
+
+.. note::
+
+   ``list_defaults`` governs lists at the top level of that ``default``.  A
+   list nested in a deeper mapping is merged by ``dict.update``, which
+   overwrites it under either mode.  Declaring ``list_defaults`` on a ``dict``
+   that has ``attributes`` is reported by ``check-spec``: such a dict is walked
+   attribute by attribute and its own ``default`` is never merged, so declare
+   the key on the ``list`` attributes beneath it instead.
 
 .. _base_config_required:
 
